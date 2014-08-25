@@ -1,31 +1,44 @@
+import akka.actor.{Actor, Props}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import io.gatling.app.Gatling
 import io.gatling.core.Predef._
+import io.gatling.core.akka.GatlingActorSystem
+import io.gatling.core.check.{CheckBuilder, SaveAs}
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
+import io.gatling.http.action.ws.WsSendActionBuilder
+import io.gatling.http.check.ws.WsCheck
 
 import scala.concurrent.duration._
 
-sealed trait Message
+//case class Request(clientId: String = "${clientId}", channel: String, data: Map[String, String])
+//case class Subscription(id:String="2",channel: String = "/meta/subscribe", subscription:String)
 
-case class Request(request: String) extends Message
 
-case class Response(response: String) extends Message
+case class Handshake(id: String = "0", channel: String = "/meta/handshake", supportedConnectionTypes: List[String] = List("long-polling"), version: String = "1.0")
+
+case class Connect(id: String = "1", channel: String = "/meta/connect", clientId: String = "${clientId}", connectionType: String = "websocket", advice: Map[String, String] = Map("timeout" -> "0"))
+
+case class Response(id: String, channel: String, clientId: String, successful: Option[Boolean])
 
 class GatlingTest extends Simulation {
 
+  import CometDExtension._
   import MarshallableImplicits._
 
   val httpConf = http
     .wsBaseURL("ws://localhost:8000")
     .disableFollowRedirect.disableWarmUp
 
+  val sessionDataActor = GatlingActorSystem.instance.actorOf(SessionDataContainer.props)
+
   val scn = scenario("WebSocket")
-    .exec(ws("Connect WS").open("/"))
+    .exec(ws("Connect WS").open("/beyaux"))
     .pause(1 second)
-    .exec(ws("Echo").sendText(Request("Please echo!").toJson).check(wsAwait.within(5 seconds).until(1).message.transform(m => m.fromJson[Response].response).is("Please echo!")))
+    .exec(ws("Handshake").sendText(Handshake().toJson).handleResponse(clientIdExtractor, saveAs = Some("clientId")))
+    .exec(ws("Connect").sendText(Connect().toJson).check(wsAwait.within(5 seconds).until(1).message))
     .exec(ws("Close WS").close)
 
   setUp(
@@ -33,6 +46,13 @@ class GatlingTest extends Simulation {
       rampUsers(1) over (1 seconds)
     ).protocols(httpConf)
   )
+
+  val clientIdExtractor = (response: Response) => {
+    if (response.successful.isDefined && response.successful.get == true && response.id == "0")
+      response.clientId
+    else
+      ""
+  }
 }
 
 object GatlingTest extends App {
@@ -66,4 +86,64 @@ object MarshallableImplicits {
   }
 
 }
+
+object CometDExtension {
+
+  implicit class WsSendActionBuilderExtension(wsSendActionBuilder: WsSendActionBuilder) {
+    def handleResponse(fn: => Response => String, handler: Step2 = wsAwait, saveAs: Option[String] = None) = {
+      val response = response2(fn, handler)
+      if (saveAs.isDefined)
+        wsSendActionBuilder.check(response.saveAs(saveAs.get))
+      else
+        wsSendActionBuilder.check(response)
+    }
+
+    private def response2(fn: => Response => String, handler: Step2): CheckBuilder[WsCheck, String, String, String] with SaveAs[WsCheck, String, String, String] = {
+      import MarshallableImplicits._
+      handler.within(5 seconds).until(1).message.transform(message => message.fromJson[List[Response]].get(0)).transform(fn(_)).not("")
+    }
+  }
+
+}
+
+class SessionDataContainer extends Actor {
+
+  context.become(handle())
+
+  override def receive: Actor.Receive = {
+    case _ => throw new RuntimeException()
+  }
+
+  def handle(container: Map[String, Map[String, String]] = Map.empty): Receive = {
+    case Save(sessionId, key, value) => save(container, sessionId, key, value)
+    case Get(sessionId, key) => sender ! Value(sessionId, key, getSessionMap(container, sessionId).get(key))
+    case GetGeneratedId(sessionId) => {
+      val id = (Integer.parseInt(getSessionMap(container, sessionId).getOrElse("id", "0")) + 1).toString
+      save(container, sessionId, "id", id)
+      sender ! Value(sessionId, "id", Some(id))
+    }
+  }
+
+  private def save(container: Map[String, Map[String, String]], sessionId: String, key: String, value: String) {
+    context become (handle(container + (sessionId -> (getSessionMap(container, sessionId) + (key -> value)))))
+  }
+
+  private def getSessionMap(container: Map[String, Map[String, String]], sessionId: String) = {
+    container.getOrElse(sessionId, Map.empty[String, String])
+  }
+}
+
+object SessionDataContainer {
+  def props = Props(classOf[SessionDataContainer])
+
+}
+
+case class Save(sessionId: String, key: String, value: String)
+
+case class Get(sessionId: String, key: String)
+
+case class GetGeneratedId(sessionId: String)
+
+case class Value(sessionId: String, key: String, value: Option[String])
+
 

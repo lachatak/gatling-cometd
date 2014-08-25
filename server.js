@@ -1,27 +1,31 @@
-var WebSocket = require('faye-websocket'),
-    http      = require('http');
+var http = require('http'),
+    faye = require('faye');
 
-var server = http.createServer();
+faye.logger = function (message){
+    console.log('log', message);
+}
 
-server.on('upgrade', function(request, socket, body) {
-  if (WebSocket.isWebSocket(request)) {
-    var ws = new WebSocket(request, socket, body);
+var server = http.createServer(),
+    bayeux = new faye.NodeAdapter({mount: '/beyaux', timeout: 45});
 
-    ws.on('message', function(event) {
-      console.log(event.data)
-      var response = JSON.stringify({response:JSON.parse(event.data).request});
-      console.log(response)
-      ws.send(response);
-    });
+var bayeuxClient = bayeux.getClient();
 
-    ws.on('close', function(event) {
-      console.log('close', event.code, event.reason);
-      ws = null;
-    });
-  }
-});
+Logger = {
+    incoming: function(message, callback) {
+        console.log('incoming', message);
+        callback(message);
+    },
+    outgoing: function(message, callback) {
+        console.log('outgoing', message);
+        callback(message);
+    }
+};
 
+bayeuxClient.addExtension(Logger);
+
+bayeux.attach(server);
 server.listen(8000);
 
 console.log("Server listening on port %d", server.address().port);
+
 
