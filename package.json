@@ -2,6 +2,6 @@
   "name": "GatlingWebsocketTest",
   "version": "1.0.0",
   "dependencies": {
-    "ws": "^0.4.32"
+    "faye-websocket": "^0.7.2"
   }
 }

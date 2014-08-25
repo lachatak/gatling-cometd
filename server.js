@@ -9,7 +9,9 @@ server.on('upgrade', function(request, socket, body) {
 
     ws.on('message', function(event) {
       console.log(event.data)
-      ws.send(event.data);
+      var response = JSON.stringify({response:JSON.parse(event.data).request});
+      console.log(response)
+      ws.send(response);
     });
 
     ws.on('close', function(event) {

@@ -14,6 +14,8 @@ crossPaths := false
 
 val test = project.in(file("."))
   .settings(libraryDependencies ++= Seq(
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.2",
+  "com.fasterxml.jackson.module" % "jackson-module-scala_2.10" % "2.4.1",
   "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-SNAPSHOT" % "test"
 ))
 
