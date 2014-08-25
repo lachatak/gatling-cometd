@@ -8,8 +8,7 @@ import scala.concurrent.duration._
 class GatlingTest extends Simulation {
 
   val httpConf = http
-        .wsBaseURL("ws://echo.websocket.org")
-//    .wsBaseURL("ws://localhost:8080")
+    .wsBaseURL("ws://localhost:8000")
     .disableFollowRedirect.disableWarmUp
 
   val scn = scenario("WebSocket")
