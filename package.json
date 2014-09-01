@@ -1,6 +1,6 @@
 {
-  "name": "gatling-websocket-test",
-  "version": "1.0.0",
+  "name": "gatling-cometd-test",
+  "version": "1.0.0-SNAPSHOT",
   "dependencies": {
     "faye": "1.0.3"
   }
