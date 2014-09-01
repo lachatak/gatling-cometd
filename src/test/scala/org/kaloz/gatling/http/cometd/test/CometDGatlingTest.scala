@@ -75,7 +75,7 @@ class Processor extends PubSubProcessorActor {
   val counter = new AtomicLong(0)
 
   def messageReceive: Actor.Receive = {
-    case published: Published =>
+    case Published(channel, data) =>
       counter.getAndIncrement
     case GetCounter =>
       sender ! counter.get
