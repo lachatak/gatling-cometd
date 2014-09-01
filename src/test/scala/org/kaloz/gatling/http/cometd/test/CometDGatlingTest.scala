@@ -36,7 +36,10 @@ class CometDGatlingTest extends Simulation with Logging {
 
   val httpConf = http
     .wsBaseURL("ws://localhost:8000")
-    .disableFollowRedirect.disableWarmUp
+    .wsReconnect
+    .wsMaxReconnects(3)
+    .disableFollowRedirect
+    .disableWarmUp
 
   val scn = scenario("WebSocket")
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
