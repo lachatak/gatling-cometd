@@ -1,8 +1,10 @@
-gatling-test
-============
+# gatling-cometd #
 
-gatling 2 wbesocket test
+This extension is build on top of [Gatling](http://gatling.io/) websocket functionality to support cometD testing. 
 
-https://github.com/faye/faye/blob/50349095ee15b9d4907a80546b54d44c23125aae/javascript/protocol/client.js
-
-http://www.websocket.org/echo.html
+## Run ##
+- clone the project
+- download and install nodejs 
+- install the nodejs requirements (npm install)
+- run the server (node server.js)
+- run the example load test (sbt gatling:test)
