@@ -1,6 +1,5 @@
 package org.kaloz.gatling.http
 
-import akka.actor.ActorRef
 import io.gatling.core.Predef._
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.check._
@@ -17,8 +16,8 @@ import scala.concurrent.duration._
 package object cometd {
 
   implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
-    def registerPubSubProcessor(processor: ActorRef) = {
-      new CometDOpenRequestBuilder(wsOpenRequestBuilder.commonAttributes, wsOpenRequestBuilder.wsName, Some(processor))
+    def registerPubSubProcessor = {
+      new CometDOpenRequestBuilder(wsOpenRequestBuilder.commonAttributes, wsOpenRequestBuilder.wsName)
     }
   }
 

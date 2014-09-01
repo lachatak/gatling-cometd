@@ -1,4 +1,4 @@
-
+import io.gatling.sbt.GatlingPlugin
 
 name := "cometd"
 
@@ -21,9 +21,10 @@ javacOptions ++= Seq("-Xlint:deprecation", "-encoding", "utf8", "-XX:MaxPermSize
 crossPaths := false
 
 val test = project.in(file("."))
-  .settings(
+  .enablePlugins(GatlingPlugin)
+	.settings(
     libraryDependencies ++= Seq(
-      "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-SNAPSHOT",
+      "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-RC2",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.4.0",
       "com.fasterxml.jackson.module" % "jackson-module-scala_2.10" % "2.4.1",
@@ -35,3 +36,5 @@ resolvers ++= Seq(
   "Typasafe release" at "http://repo.typesafe.com/typesafe/releases/",
   "SonaType release" at "https://oss.sonatype.org/content/repositories/releases/"
 )
+
+publishArtifact in Test := true

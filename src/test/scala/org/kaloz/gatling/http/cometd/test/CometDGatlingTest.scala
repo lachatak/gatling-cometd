@@ -39,7 +39,7 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     .disableFollowRedirect.disableWarmUp
 
   val scn = scenario("WebSocket")
-    .exec(ws("Open").open("/beyaux").registerPubSubProcessor(processor))
+    .exec(ws("Open").open("/beyaux").registerPubSubProcessor)
     .exec(ws("Handshake").handshake)
     .exec(ws("Connect").connect)
 

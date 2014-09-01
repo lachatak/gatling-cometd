@@ -1,6 +1,5 @@
 package org.kaloz.gatling.http.action.cometd
 
-import akka.actor.ActorRef
 import com.ning.http.client.websocket.WebSocket
 import io.gatling.core.check.CheckResult
 import io.gatling.core.result.message.{OK, Status}
@@ -13,7 +12,7 @@ import io.gatling.http.check.ws.UntilCount
 
 import scala.collection.mutable
 
-class CometDActor(wsName: String, processor: Option[ActorRef]) extends WsActor(wsName) {
+class CometDActor(wsName: String) extends WsActor(wsName) {
 
   private def logRequest(session: Session, requestName: String, status: Status, started: Long, ended: Long, errorMessage: Option[String]): Unit = {
     writeRequestData(
@@ -82,9 +81,7 @@ class CometDActor(wsName: String, processor: Option[ActorRef]) extends WsActor(w
       case OnTextMessage(message, time) =>
         logger.debug(s"Received text message on websocket '$wsName':$message")
 
-        processor.foreach { processor =>
-          processor ! Message(message)
-        }
+        context.system.eventStream.publish(Message(message))
 
         implicit val cache = mutable.Map.empty[Any, Any]
 

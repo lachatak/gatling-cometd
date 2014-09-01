@@ -19,6 +19,7 @@ trait PubSubProcessorActor extends Actor with ActorLogging {
   override def preStart = {
     context.system.eventStream.subscribe(context.self, classOf[SubscribeMessage])
     context.system.eventStream.subscribe(context.self, classOf[UnsubscribeMessage])
+    context.system.eventStream.subscribe(context.self, classOf[Message])
   }
 
   override def receive: Actor.Receive = pubSubReceive orElse messageReceive

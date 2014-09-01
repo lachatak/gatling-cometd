@@ -16,7 +16,6 @@ class CometDOpenAction(
                      request: Expression[Request],
                      check: Option[WsCheck],
                      val next: ActorRef,
-                     val processor: Option[ActorRef],
                      protocol: HttpProtocol) extends Interruptable {
 
   def execute(session: Session): Unit = {
@@ -24,7 +23,7 @@ class CometDOpenAction(
     def open(tx: WsTx): Unit = {
       logger.info(s"Opening websocket '$wsName': Scenario '${session.scenarioName}', UserId #${session.userId}")
 
-      val wsActor = actor(context)(new CometDActor(wsName, processor))
+      val wsActor = actor(context)(new CometDActor(wsName))
 
       HttpEngine.instance.startWebSocketTransaction(tx, wsActor)
     }
