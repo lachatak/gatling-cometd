@@ -14,9 +14,9 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 
 ## Run ##
 - clone the project
-- download and install nodejs 
+- download and install nodejs (this is the cometd test server to be able to test gatling cometD DSL) 
 - install the nodejs requirements (npm install)
 - run the server (node server.js)
 - run the example load test (sbt gatling:test)
 
-**DSL is still under development**
+**DSL is still under development !!**
