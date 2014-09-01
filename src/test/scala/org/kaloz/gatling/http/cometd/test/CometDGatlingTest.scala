@@ -4,14 +4,14 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{Actor, Props}
 import akka.util.Timeout
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.slf4j.Logging
 import io.gatling.app.Gatling
 import io.gatling.core.Predef._
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
 import org.kaloz.gatling.http.action.cometd.PubSubProcessorActor
-import org.kaloz.gatling.http.cometd.CometDMessages.{Data, Published}
+import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
 import org.kaloz.gatling.http.cometd.test.Processor.GetCounter
 
 import scala.concurrent.Await
@@ -23,11 +23,11 @@ object CometDGatlingTest extends App {
   Gatling.fromMap(gatlingPropertyBuilder.build)
 }
 
-class CometDGatlingTest extends Simulation with StrictLogging {
+class CometDGatlingTest extends Simulation with Logging {
 
   import org.kaloz.gatling.http.cometd._
 
-  case class Shout(message: String = "Echo message!!", userId: String = "${userId}") extends Data
+  case class Shout(message: String = "Echo message!!", userId: String = "${userId}")
 
   val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
@@ -40,8 +40,8 @@ class CometDGatlingTest extends Simulation with StrictLogging {
 
   val scn = scenario("WebSocket")
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
-    .exec(cometd("Handshake").handshake)
-    .exec(cometd("Connect").connect)
+    .exec(cometd("Handshake").handshake())
+    .exec(cometd("Connect").connect())
 
     .exec(session => session.set("userId", userId.getAndIncrement))
     .exec(cometd("Subscribe Timer").subscribe("/timer", Some("TriggeredTime")))
@@ -61,7 +61,7 @@ class CometDGatlingTest extends Simulation with StrictLogging {
 
     .exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
     .exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-    .exec(cometd("Disconnect").disconnect)
+    .exec(cometd("Disconnect").disconnect())
   //    .exec(ws("Close WS").close)
 
   setUp(
@@ -75,7 +75,7 @@ class Processor extends PubSubProcessorActor {
   val counter = new AtomicLong(0)
 
   def messageReceive: Actor.Receive = {
-    case Published(channel, data) =>
+    case PublishedMap(channel, data) =>
       counter.getAndIncrement
     case GetCounter =>
       sender ! counter.get

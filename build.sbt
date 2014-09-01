@@ -22,9 +22,9 @@ crossPaths := false
 
 val test = project.in(file("."))
   .enablePlugins(GatlingPlugin)
-	.settings(
+  .settings(
     libraryDependencies ++= Seq(
-      "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-RC2",
+      "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-RC3",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.4.0",
       "com.fasterxml.jackson.module" % "jackson-module-scala_2.10" % "2.4.1",

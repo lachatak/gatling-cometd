@@ -28,18 +28,18 @@ package object cometd {
 
     import org.kaloz.gatling.json.MarshallableImplicits._
 
-    def handshake = {
-      ws.sendText(Handshake().toJson).checkResponse(check(_, { (ack, message) => ack.clientId.getOrElse("")}), saveAs = Some("clientId"))
+    def handshake(handshake: Handshake = Handshake()) = {
+      ws.sendText(handshake.toJson).checkResponse(check(_, { (ack, message) => ack.clientId.getOrElse("")}), saveAs = Some("clientId"))
     }
 
-    def connect = {
-      ws.sendText(Connect().toJson).checkResponse(check(_, { (ack, message) => message}))
+    def connect(connect: Connect = Connect()) = {
+      ws.sendText(connect.toJson).checkResponse(check(_, { (ack, message) => message}))
     }
 
-    def subscribe(subscription: String, responsePattern: Option[String] = None, subscribeToPubSubProcessor: Boolean = true) = {
+    def subscribe(subscription: String, responsePattern: Option[String] = None, subscribeToPubSubProcessor: Boolean = true, extractor:String=>Published = {m=> m.fromJson[List[PublishedMap]].get(0)}) = {
       ws.sendText(Subscribe(subscription = subscription).toJson).checkResponse(check(_, { (ack, message) =>
         if (subscribeToPubSubProcessor)
-          GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, responsePattern.getOrElse( s""""channel":"$subscription"""")))
+          GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, responsePattern.getOrElse( s""""channel":"$subscription""""), extractor))
         message
       }))
     }
@@ -51,16 +51,16 @@ package object cometd {
       }))
     }
 
-    def publish(channel: String, data: Data) = {
+    def publish(channel: String, data: Any) = {
       ws.sendText(Publish(channel = channel, clientId = Some("${clientId}"), data = data).toJson)
     }
 
-    def sendCommand(channel: String, data: Data) = {
+    def sendCommand(channel: String, data: Any) = {
       publish(channel, data)
     }
 
-    def disconnect = {
-      ws.sendText(Disconnect().toJson).checkResponse(check(_, { (ack, message) => message}))
+    def disconnect(disconnect: Disconnect = Disconnect()) = {
+      ws.sendText(disconnect.toJson).checkResponse(check(_, { (ack, message) => message}))
     }
 
     private val check = (message: String, extractor: (Ack, String) => String) => {
