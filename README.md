@@ -18,3 +18,5 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 - install the nodejs requirements (npm install)
 - run the server (node server.js)
 - run the example load test (sbt gatling:test)
+
+**DSL is still under development**
