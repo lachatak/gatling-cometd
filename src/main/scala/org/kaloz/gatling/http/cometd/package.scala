@@ -3,6 +3,7 @@ package org.kaloz.gatling.http
 import io.gatling.core.Predef._
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.check._
+import io.gatling.core.session._
 import io.gatling.http.Predef._
 import io.gatling.http.action.ws._
 import io.gatling.http.check.ws.WsCheck
@@ -14,6 +15,8 @@ import org.kaloz.gatling.http.request.builder.cometd.CometDOpenRequestBuilder
 import scala.concurrent.duration._
 
 package object cometd {
+
+  def cometd(requestName: Expression[String]) = new Ws(requestName)
 
   implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
     def registerPubSubProcessor = {

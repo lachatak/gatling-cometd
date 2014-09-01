@@ -39,13 +39,13 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     .disableFollowRedirect.disableWarmUp
 
   val scn = scenario("WebSocket")
-    .exec(ws("Open").open("/beyaux").registerPubSubProcessor)
-    .exec(ws("Handshake").handshake)
-    .exec(ws("Connect").connect)
+    .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+    .exec(cometd("Handshake").handshake)
+    .exec(cometd("Connect").connect)
 
     .exec(session => session.set("userId", userId.getAndIncrement))
-    .exec(ws("Subscribe Timer").subscribe("/timer", Some("TriggeredTime")))
-    .exec(ws("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+    .exec(cometd("Subscribe Timer").subscribe("/timer", Some("TriggeredTime")))
+    .exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
     .asLongAs(session => {
     implicit val timeout = Timeout(5 seconds)
@@ -55,13 +55,13 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     val counter = Await.result(counterFuture, timeout.duration)
     counter < 5
   }) {
-    exec(ws("Shout").publish("/shout/${userId}", Shout()).checkResponse(m => if (m.contains("EchoedMessage")) m else ""))
+    exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(m => if (m.contains("EchoedMessage")) m else ""))
       .pause(3, 5)
   }
 
-    .exec(ws("Unsubscribe Timer").unsubscribe("/timer"))
-    .exec(ws("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-    .exec(ws("Disconnect").disconnect)
+    .exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
+    .exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+    .exec(cometd("Disconnect").disconnect)
   //    .exec(ws("Close WS").close)
 
   setUp(
