@@ -3,4 +3,5 @@
 node_modules/
 results/
 target/
+atlassian-ide-plugin.xml
 
