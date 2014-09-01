@@ -2,14 +2,14 @@
 
 This extension is build on top of [Gatling](http://gatling.io/) websocket functionality to support cometD testing via cometD DSL.
 ```
-    .exec(ws("Handshake").handshake)
-    .exec(ws("Connect").connect)
+    .exec(cometd("Handshake").handshake)
+    .exec(cometd("Connect").connect)
 
-    .exec(ws("Subscribe Timer").subscribe("/timer"))
-    .exec(ws("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(m => if (m.contains("EchoedMessage")) m else ""))
+    .exec(cometd("Subscribe Timer").subscribe("/timer"))
+    .exec(cometd("Shout Command").sendCommand("/echo", Echo()).checkResponse(m => if (m.contains("EchoedMessage")) m else ""))
 
-    .exec(ws("Unsubscribe Timer").unsubscribe("/timer"))
-    .exec(ws("Disconnect").disconnect)
+    .exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
+    .exec(cometd("Disconnect").disconnect)
 ```
 
 ## Run ##
