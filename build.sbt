@@ -1,6 +1,6 @@
 import io.gatling.sbt.GatlingPlugin
 
-name := "cometd"
+name := "http-cometd"
 
 organization := "org.kaloz.gatling"
 
