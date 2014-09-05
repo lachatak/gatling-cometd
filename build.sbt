@@ -21,7 +21,6 @@ javacOptions ++= Seq("-Xlint:deprecation", "-encoding", "utf8", "-XX:MaxPermSize
 crossPaths := false
 
 val test = project.in(file("."))
-  .enablePlugins(GatlingPlugin)
   .settings(
     libraryDependencies ++= Seq(
       "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-RC3",

@@ -1,5 +1,6 @@
 package org.kaloz.gatling.http.cometd.test
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{Actor, Props}
@@ -9,9 +10,10 @@ import io.gatling.app.Gatling
 import io.gatling.core.Predef._
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.config.GatlingPropertiesBuilder
+import io.gatling.core.validation.{Validation, Failure, Success}
 import io.gatling.http.Predef._
 import org.kaloz.gatling.http.action.cometd.PubSubProcessorActor
-import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
+import org.kaloz.gatling.http.cometd.CometDMessages.{Publish, PublishedMap}
 import org.kaloz.gatling.http.cometd.test.Processor.GetCounter
 
 import scala.concurrent.Await
@@ -26,13 +28,21 @@ object CometDGatlingTest extends App {
 class CometDGatlingTest extends Simulation with Logging {
 
   import org.kaloz.gatling.http.cometd._
+  import org.kaloz.gatling.json.MarshallableImplicits._
+  import io.gatling.core.validation.{ FailureWrapper, Validation }
 
-  case class Shout(message: String = "Echo message!!", userId: String = "${userId}")
+  case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId:String="${correlationId}")
 
   val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
-  val users = 50
-  val userId = new AtomicLong(1)
+  val users = 1
+
+  val userIdGenerator = new AtomicLong(1)
+  val idGenerator = new AtomicLong(1)
+  
+  def nextUserId = userIdGenerator.getAndIncrement
+  def nextId = idGenerator.getAndIncrement
+  def nextUUID = UUID.randomUUID.toString
 
   val httpConf = http
     .wsBaseURL("ws://localhost:8000")
@@ -41,29 +51,45 @@ class CometDGatlingTest extends Simulation with Logging {
     .disableFollowRedirect
     .disableWarmUp
 
+  val correlationIdRegex: (Session) => Validation[String] = session => "(?=.*\\bEchoedMessage\\b)(?=.*\\b" +session.get("correlationId").as[String]+ "\\b).*"
+
   val scn = scenario("WebSocket")
+    .exec(storeValue("userId", nextUserId))
+
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+    .exec(storeValue("id", nextId))
     .exec(cometd("Handshake").handshake())
+    .exec(storeValue("id", nextId))
     .exec(cometd("Connect").connect())
 
-    .exec(session => session.set("userId", userId.getAndIncrement))
-    .exec(cometd("Subscribe Timer").subscribe("/timer", Some("TriggeredTime")))
+//    .exec(cometd("Subscribe Timer").subscribe("/timer", Some("TriggeredTime")))
+    .exec(storeValue("id", nextId))
     .exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
-    .asLongAs(session => {
-    implicit val timeout = Timeout(5 seconds)
-    import akka.pattern.ask
 
-    val counterFuture = (processor ? GetCounter).mapTo[Long]
-    val counter = Await.result(counterFuture, timeout.duration)
-    counter < 5
-  }) {
-    exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(m => if (m.contains("EchoedMessage")) m else ""))
-      .pause(3, 5)
-  }
+    .exec(storeValue("correlationId", nextUUID))
+    .exec(cometd("Shout Command").sendText(Publish(channel="/shout/${userId}", data=Shout()).toJson).check(
+    wsAwait.within(requestTimeOut).until(1).regex(correlationIdRegex).find
+      .transform(m=>{
+      logger.info(s"CHECKER2 : $m")
+      m
+    }).exists))
 
-    .exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
-    .exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+//    .asLongAs(session => {
+//    implicit val timeout = Timeout(5 seconds)
+//    import akka.pattern.ask
+//
+//    val counterFuture = (processor ? GetCounter).mapTo[Long]
+//    val counter = Await.result(counterFuture, timeout.duration)
+//    counter < 5
+//  }) {
+//    .exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponseContains("EchoedMessage"))
+//    .pause(3, 5)
+//  }
+
+//    .exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
+//    .exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+    .exec(storeValue("id", nextId))
     .exec(cometd("Disconnect").disconnect())
   //    .exec(ws("Close WS").close)
 
