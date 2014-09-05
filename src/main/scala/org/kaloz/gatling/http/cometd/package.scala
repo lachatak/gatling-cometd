@@ -5,7 +5,6 @@ import io.gatling.core.Predef._
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.check._
 import io.gatling.core.session._
-import io.gatling.core.validation.Validation
 import io.gatling.http.Predef._
 import io.gatling.http.action.ws._
 import io.gatling.http.check.ws.WsCheck
@@ -20,8 +19,7 @@ package object cometd {
 
   def cometd(requestName: Expression[String]) = new Ws(requestName)
 
-  def storeValue(key: String, value: Any): Expression[Session] =
-    session => session.set(key, value)
+  def storeValue(key: String, value: Any): Expression[Session] = session => session.set(key, value)
 
   implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
     def registerPubSubProcessor = {
@@ -33,30 +31,33 @@ package object cometd {
 
     import org.kaloz.gatling.json.MarshallableImplicits._
 
+    val cometDProtocolMatchers = List("\"id\":\"${id}\"", "\"successful\":true")
+
     def handshake(handshake: Handshake = Handshake()) = {
       ws.sendText(handshake.toJson).checkResponse(fn = { message =>
         val ack = message.fromJson[List[Ack]].get(0)
-        ack.clientId.getOrElse("")
-      }, saveAs = Some("clientId"))
+        ack.clientId.get
+      }, matchers = "\"clientId\"" :: cometDProtocolMatchers, saveAs = Some("clientId"))
     }
 
     def connect(connect: Connect = Connect()) = {
-      ws.sendText(connect.toJson).checkResponse()
+      ws.sendText(connect.toJson).checkResponse(matchers = cometDProtocolMatchers)
     }
 
-    def subscribe(subscription: String, responsePattern: Option[String] = None, subscribeToPubSubProcessor: Boolean = true, extractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
+    def subscribe(subscription: String, matchers: List[String] = List.empty, subscribeToPubSubProcessor: Boolean = true, extractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
       ws.sendText(Subscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
-        if (subscribeToPubSubProcessor)
-          GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, responsePattern.getOrElse( s""""channel":"$subscription""""), extractor))
+        if (subscribeToPubSubProcessor) {
+          GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, matchers, extractor))
+        }
         message
-      })
+      }, matchers = cometDProtocolMatchers)
     }
 
     def unsubscribe(subscription: String) = {
       ws.sendText(Unsubscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
         GatlingActorSystem.instance.eventStream.publish(UnsubscribeMessage(subscription))
         message
-      })
+      }, matchers = cometDProtocolMatchers)
     }
 
     def publish(channel: String, data: Any) = {
@@ -68,12 +69,12 @@ package object cometd {
     }
 
     def disconnect(disconnect: Disconnect = Disconnect()) = {
-      ws.sendText(disconnect.toJson).checkResponse()
+      ws.sendText(disconnect.toJson).checkResponse(matchers = cometDProtocolMatchers)
     }
   }
 
   implicit class CometDWsSendActionBuilder(val wsSendActionBuilder: WsSendActionBuilder)(implicit requestTimeOut: FiniteDuration) extends Logging {
-    def checkResponse(fn: String => String = {m => m}, matchers: List[String] = List("id\":\"${id}", "successful\":true"), saveAs: Option[String] = None) = {
+    def checkResponse(fn: String => String = { m => m}, matchers: List[String], saveAs: Option[String] = None) = {
       val response = this.response(fn, matchers)
       if (saveAs.isDefined)
         wsSendActionBuilder.check(response.saveAs(saveAs.get))
@@ -82,15 +83,8 @@ package object cometd {
     }
 
     private def response(fn: String => String, matchers: List[String]): CheckBuilder[WsCheck, String, CharSequence, String] with SaveAs[WsCheck, String, CharSequence, String] = {
-      def generateRegex: (Session) => Validation[String] = { session =>
-        val resolvable = "\\$\\{(.*)\\}".r
-
-//        matchers.map { m => resolvable.findFirstIn(m).foreach{ r => session.get(r).as[String] }}.mkString("(?=.*\\b", "\\b)(?=.*\\b", "\\b).*")
-        session.get("id")
-        logger.info(matchers.map { m => resolvable.findFirstIn(m).foreach{ r => session.get(r).as[String] }}.mkString("(?=.*\\b", "\\b)(?=.*\\b", "\\b).*"))
-        matchers.mkString("(?=.*\\b", "\\b)(?=.*\\b", "\\b).*")
-      }
-      wsAwait.within(requestTimeOut).until(1).regex(generateRegex).find.transform(fn).exists
+      import org.kaloz.gatling.regex.RegexUtil._
+      wsAwait.within(requestTimeOut).until(1).regex(stringToExpression(expression(matchers))).find.transform(fn).exists
     }
   }
 

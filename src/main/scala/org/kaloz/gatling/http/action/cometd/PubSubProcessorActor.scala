@@ -2,10 +2,13 @@ package org.kaloz.gatling.http.action.cometd
 
 import akka.actor.{Actor, ActorLogging}
 import org.kaloz.gatling.http.cometd.CometDMessages.Published
+import io.gatling.core.Predef._
+import io.gatling.core.session._
 
 import scala.util.matching.Regex
+import org.kaloz.gatling.regex.RegexUtil._
 
-case class SubscribeMessage(subscription: String, responsePattern: String, extractor: String => Published)
+case class SubscribeMessage(subscription: String, matchers: List[String], extractor: String => Published)
 
 case class UnsubscribeMessage(subscription: String)
 
@@ -24,8 +27,8 @@ trait PubSubProcessorActor extends Actor with ActorLogging {
   override def receive: Actor.Receive = pubSubReceive orElse messageReceive
 
   def pubSubReceive: Actor.Receive = {
-    case SubscribeMessage(subscription, responsePattern, extractor) =>
-      subscriptions = subscriptions + (subscription ->(responsePattern.r, extractor))
+    case SubscribeMessage(subscription, matchers, extractor) =>
+      subscriptions = subscriptions + (subscription ->(expression(matchers).r, extractor))
     case UnsubscribeMessage(subscription) =>
       subscriptions = subscriptions - subscription
     case Message(message) =>
