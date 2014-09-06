@@ -9,15 +9,14 @@ var server = http.createServer(),
     bayeux = new faye.NodeAdapter({mount: '/beyaux', timeout: 45});
 
 var bayeuxClient = bayeux.getClient();
-var timer;
+var timers = {};
 
 var isTimer = function (channel) {
     return channel.split('/').slice(1)[0] === 'timer';
 }
 
 var setTimer = function (channel) {
-    if (isTimer(channel))
-        timer = setTimeout(function () {
+        timers[channel] = setTimeout(function () {
             var date = new Date();
             bayeuxClient.publish(channel, {datetime: date.getTime(), type: 'TriggeredTime'});
             setTimer(channel);
@@ -25,12 +24,13 @@ var setTimer = function (channel) {
 }
 
 bayeux.bind('subscribe', function (clientId, channel) {
-    setTimer(channel);
+    if (isTimer(channel))
+        setTimer(channel);
 });
 
 bayeux.bind('unsubscribe', function (clientId, channel) {
     if (isTimer(channel)) {
-        clearTimeout(timer);
+        clearTimeout(timers[channel]);
     }
 });
 

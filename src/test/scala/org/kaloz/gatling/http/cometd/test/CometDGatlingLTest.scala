@@ -32,7 +32,7 @@ class CometDGatlingTest extends Simulation with Logging {
 
   val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
-  val users = 50
+  val users = 1
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
@@ -55,26 +55,29 @@ class CometDGatlingTest extends Simulation with Logging {
 
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
     .storeValue("id", nextId).exec(cometd("Handshake").handshake())
-    .storeValue("id", nextId).exec(cometd("Connect").connect())
+    .doIf(session => session.contains("clientId")) {
 
-    .storeValue("id", nextId).exec(cometd("Subscribe Timer").subscribe("/timer", Set("TriggeredTime")))
-    .storeValue("id", nextId).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+    storeValue("id", nextId).exec(cometd("Connect").connect())
 
-    .asLongAs(session => {
-    implicit val timeout = Timeout(5 seconds)
-    import akka.pattern.ask
+      .storeValue("id", nextId).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
+      .storeValue("id", nextId).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
-    val counterFuture = (processor ? GetCounter).mapTo[Long]
-    val counter = Await.result(counterFuture, timeout.duration)
-    counter < 5
-  }) {
-    storeValue("correlationId", nextUUID).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
-      .pause(3, 5)
+      .asLongAs(session => {
+      implicit val timeout = Timeout(5 seconds)
+      import akka.pattern.ask
+
+      val counterFuture = (processor ? GetCounter).mapTo[Long]
+      val counter = Await.result(counterFuture, timeout.duration)
+      counter < 5
+    }) {
+      storeValue("correlationId", nextUUID).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+        .pause(2, 4)
+    }
+
+      .storeValue("id", nextId).exec(cometd("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
+      .storeValue("id", nextId).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+      .storeValue("id", nextId).exec(cometd("Disconnect").disconnect())
   }
-
-    .storeValue("id", nextId).exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
-    .storeValue("id", nextId).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-    .storeValue("id", nextId).exec(cometd("Disconnect").disconnect())
   //    .exec(ws("Close WS").close)
 
   setUp(

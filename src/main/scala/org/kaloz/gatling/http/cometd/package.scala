@@ -21,15 +21,11 @@ import scala.concurrent.duration._
 
 package object cometd {
 
-  val idGenerator = new AtomicLong(1)
-
-  def nextId = idGenerator.getAndIncrement
-
   private val setSessionValue = (session: Session, key: String, value: Any) => session.set(key, value)
 
   def cometd(requestName: Expression[String]) = new Ws(requestName)
 
-  def storeValue(key: String, value: Any): ChainBuilder = ChainBuilder.chainOf(new SessionHookBuilder(setSessionValue(_, key, value), true))
+  def storeValue(key: String, value: => Any): ChainBuilder = ChainBuilder.chainOf(new SessionHookBuilder(setSessionValue(_, key, value), true))
 
   implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
     def registerPubSubProcessor = {
@@ -38,11 +34,11 @@ package object cometd {
   }
 
   implicit class ScenarioBuilderExtension(val scenarioBuilder: ScenarioBuilder) {
-    def storeValue(key: String, value: Any): ScenarioBuilder = scenarioBuilder.exec(setSessionValue(_, key, value))
+    def storeValue(key: String, value: => Any): ScenarioBuilder = scenarioBuilder.exec(setSessionValue(_, key, value))
   }
 
   implicit class ChainBuilderExtension(val chainBuilder: ChainBuilder) {
-    def storeValue(key: String, value: Any): ChainBuilder = chainBuilder.exec(setSessionValue(_, key, value))
+    def storeValue(key: String, value: => Any): ChainBuilder = chainBuilder.exec(setSessionValue(_, key, value))
   }
 
   implicit class WsCometDExtension(val ws: Ws)(implicit requestTimeOut: FiniteDuration) extends Logging {
