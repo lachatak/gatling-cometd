@@ -1,10 +1,14 @@
 package org.kaloz.gatling.http
 
+import java.util.concurrent.atomic.AtomicLong
+
 import com.typesafe.scalalogging.slf4j.Logging
 import io.gatling.core.Predef._
+import io.gatling.core.action.builder.SessionHookBuilder
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.check._
 import io.gatling.core.session._
+import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef._
 import io.gatling.http.action.ws._
 import io.gatling.http.check.ws.WsCheck
@@ -17,9 +21,15 @@ import scala.concurrent.duration._
 
 package object cometd {
 
+  val idGenerator = new AtomicLong(1)
+
+  def nextId = idGenerator.getAndIncrement
+
+  private val setSessionValue = (session: Session, key: String, value: Any) => session.set(key, value)
+
   def cometd(requestName: Expression[String]) = new Ws(requestName)
 
-  def storeValue(key: String, value: Any): Expression[Session] = session => session.set(key, value)
+  def storeValue(key: String, value: Any): ChainBuilder = ChainBuilder.chainOf(new SessionHookBuilder(setSessionValue(_, key, value), true))
 
   implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
     def registerPubSubProcessor = {
@@ -27,24 +37,32 @@ package object cometd {
     }
   }
 
-  implicit class WsCometdExtension(val ws: Ws)(implicit requestTimeOut: FiniteDuration) extends Logging {
+  implicit class ScenarioBuilderExtension(val scenarioBuilder: ScenarioBuilder) {
+    def storeValue(key: String, value: Any): ScenarioBuilder = scenarioBuilder.exec(setSessionValue(_, key, value))
+  }
 
-    import org.kaloz.gatling.json.MarshallableImplicits._
+  implicit class ChainBuilderExtension(val chainBuilder: ChainBuilder) {
+    def storeValue(key: String, value: Any): ChainBuilder = chainBuilder.exec(setSessionValue(_, key, value))
+  }
 
-    val cometDProtocolMatchers = List("\"id\":\"${id}\"", "\"successful\":true")
+  implicit class WsCometDExtension(val ws: Ws)(implicit requestTimeOut: FiniteDuration) extends Logging {
+
+    import org.kaloz.gatling.json.JsonMarshallableImplicits._
+
+    val cometDProtocolMatchers = Set("\"id\":\"${id}\"", "\"successful\":true")
 
     def handshake(handshake: Handshake = Handshake()) = {
       ws.sendText(handshake.toJson).checkResponse(fn = { message =>
         val ack = message.fromJson[List[Ack]].get(0)
         ack.clientId.get
-      }, matchers = "\"clientId\"" :: cometDProtocolMatchers, saveAs = Some("clientId"))
+      }, matchers = cometDProtocolMatchers + "\"clientId\"", saveAs = Some("clientId"))
     }
 
     def connect(connect: Connect = Connect()) = {
       ws.sendText(connect.toJson).checkResponse(matchers = cometDProtocolMatchers)
     }
 
-    def subscribe(subscription: String, matchers: List[String] = List.empty, subscribeToPubSubProcessor: Boolean = true, extractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
+    def subscribe(subscription: String, matchers: Set[String] = Set.empty, subscribeToPubSubProcessor: Boolean = true, extractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
       ws.sendText(Subscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
         if (subscribeToPubSubProcessor) {
           GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, matchers, extractor))
@@ -74,15 +92,15 @@ package object cometd {
   }
 
   implicit class CometDWsSendActionBuilder(val wsSendActionBuilder: WsSendActionBuilder)(implicit requestTimeOut: FiniteDuration) extends Logging {
-    def checkResponse(fn: String => String = { m => m}, matchers: List[String], saveAs: Option[String] = None) = {
+    def checkResponse(fn: String => String = { m => m}, matchers: Set[String], saveAs: Option[String] = None) = {
       val response = this.response(fn, matchers)
-      if (saveAs.isDefined)
-        wsSendActionBuilder.check(response.saveAs(saveAs.get))
+      wsSendActionBuilder.check(if (saveAs.isDefined)
+        response.saveAs(saveAs.get)
       else
-        wsSendActionBuilder.check(response)
+        response)
     }
 
-    private def response(fn: String => String, matchers: List[String]): CheckBuilder[WsCheck, String, CharSequence, String] with SaveAs[WsCheck, String, CharSequence, String] = {
+    private def response(fn: String => String, matchers: Set[String]): CheckBuilder[WsCheck, String, CharSequence, String] with SaveAs[WsCheck, String, CharSequence, String] = {
       import org.kaloz.gatling.regex.RegexUtil._
       wsAwait.within(requestTimeOut).until(1).regex(stringToExpression(expression(matchers))).find.transform(fn).exists
     }

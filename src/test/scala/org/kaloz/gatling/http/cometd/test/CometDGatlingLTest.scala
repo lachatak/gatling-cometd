@@ -32,7 +32,7 @@ class CometDGatlingTest extends Simulation with Logging {
 
   val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
-  val users = 1
+  val users = 50
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
@@ -51,14 +51,14 @@ class CometDGatlingTest extends Simulation with Logging {
     .disableWarmUp
 
   val scn = scenario("WebSocket")
-    .exec(storeValue("userId", nextUserId))
+    .storeValue("userId", nextUserId)
 
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
-    .exec(storeValue("id", nextId)).exec(cometd("Handshake").handshake())
-    .exec(storeValue("id", nextId)).exec(cometd("Connect").connect())
+    .storeValue("id", nextId).exec(cometd("Handshake").handshake())
+    .storeValue("id", nextId).exec(cometd("Connect").connect())
 
-    .exec(storeValue("id", nextId)).exec(cometd("Subscribe Timer").subscribe("/timer", List("TriggeredTime")))
-    .exec(storeValue("id", nextId)).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+    .storeValue("id", nextId).exec(cometd("Subscribe Timer").subscribe("/timer", Set("TriggeredTime")))
+    .storeValue("id", nextId).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
     .asLongAs(session => {
     implicit val timeout = Timeout(5 seconds)
@@ -68,13 +68,13 @@ class CometDGatlingTest extends Simulation with Logging {
     val counter = Await.result(counterFuture, timeout.duration)
     counter < 5
   }) {
-    exec(storeValue("correlationId", nextUUID)).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = List("${correlationId}", "EchoedMessage","!!egassem ohcE")))
+    storeValue("correlationId", nextUUID).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
       .pause(3, 5)
   }
 
-    .exec(storeValue("id", nextId)).exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
-    .exec(storeValue("id", nextId)).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-    .exec(storeValue("id", nextId)).exec(cometd("Disconnect").disconnect())
+    .storeValue("id", nextId).exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
+    .storeValue("id", nextId).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+    .storeValue("id", nextId).exec(cometd("Disconnect").disconnect())
   //    .exec(ws("Close WS").close)
 
   setUp(

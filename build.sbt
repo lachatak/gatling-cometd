@@ -1,10 +1,14 @@
-import io.gatling.sbt.GatlingPlugin
+import xerial.sbt.Sonatype.SonatypeKeys._
+
+sonatypeSettings
 
 name := "http-cometd"
 
 organization := "org.kaloz.gatling"
 
-version := "1.0.0-SNAPSHOT"
+profileName := "lachatak"
+
+version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.10.4"
 
@@ -27,13 +31,40 @@ val test = project.in(file("."))
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.4.0",
       "com.fasterxml.jackson.module" % "jackson-module-scala_2.10" % "2.4.1",
-      "io.gatling" % "test-framework" % "1.0-RC1" % "test"
+      "io.gatling" % "test-framework" % "1.0-RC1" % "test",
+      "com.typesafe.akka" %% "akka-testkit" % "2.3.4" % "test",
+      "org.specs2" %% "specs2" % "2.3.7" % "test",
+      "org.scalatest" %% "scalatest" % "2.2.0" % "test"
     ))
 
-resolvers ++= Seq(
-  "Sonatype snapshot" at "https://oss.sonatype.org/content/repositories/snapshots/",
-  "Typasafe release" at "http://repo.typesafe.com/typesafe/releases/",
-  "SonaType release" at "https://oss.sonatype.org/content/repositories/releases/"
-)
+publishMavenStyle := true
 
-publishArtifact in Test := true
+pomIncludeRepository := { _ => false}
+
+publishArtifact in Test := false
+
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+
+licenses := Seq("BSD-style" -> url("http://www.opensource.org/licenses/bsd-license.php"))
+
+homepage := Some(url("https://github.com/lachatak/gatling-cometd"))
+
+pomExtra := (
+  <scm>
+    <url>git@github.com:lachatak/gatling-cometd.git</url>
+    <connection>scm:git:git@github.com:lachatak/gatling-cometd.git</connection>
+  </scm>
+    <developers>
+      <developer>
+        <id>lachatak</id>
+        <name>Krisztian Lachata</name>
+        <email>krisztian.lachata@gmail.com</email>
+        <url>http://waytothepiratecove.blogspot.co.uk</url>
+      </developer>
+    </developers>)

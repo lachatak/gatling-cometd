@@ -8,7 +8,7 @@ import io.gatling.core.session._
 import scala.util.matching.Regex
 import org.kaloz.gatling.regex.RegexUtil._
 
-case class SubscribeMessage(subscription: String, matchers: List[String], extractor: String => Published)
+case class SubscribeMessage(subscription: String, matchers: Set[String], extractor: String => Published)
 
 case class UnsubscribeMessage(subscription: String)
 
