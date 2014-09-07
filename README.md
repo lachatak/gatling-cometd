@@ -17,7 +17,6 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
     .feed(idFeeder).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
     .feed(idFeeder).exec(cometd("Disconnect").disconnect())
 ```
-**DSL is still under development !!**
 
 ## Run ##
 - Clone the project
@@ -30,6 +29,9 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 In order to be able to run and test the DSL we need a simple and easy to use cometD server. I picked [Faye](http://faye.jcoglan.com/) which is a publish-subscribe messaging system based on the Bayeux protocol running under nodejs.
  
 ## DSL in details##
+
+**DSL is still under development !!**
+
 - Configuration requires elements from the default Gatling API. The *wsBaseURl* points to my Faye local server 
  ```
    val httpConf = http
