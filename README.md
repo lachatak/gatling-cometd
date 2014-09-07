@@ -2,21 +2,130 @@
 
 This extension is build on top of [Gatling](http://gatling.io/) websocket functionality to support cometD testing via cometD DSL.
 ```
-    .exec(cometd("Handshake").handshake)
-    .exec(cometd("Connect").connect)
+    import org.kaloz.gatling.http.cometd._
 
-    .exec(cometd("Subscribe Timer").subscribe("/timer"))
-    .exec(cometd("Shout Command").sendCommand("/echo", Echo()).checkResponse(m => if (m.contains("EchoedMessage")) m else ""))
+    .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+    .feed(idFeeder).exec(cometd("Handshake").handshake())
+    .feed(idFeeder).exec(cometd("Connect").connect())
 
-    .exec(cometd("Unsubscribe Timer").unsubscribe("/timer"))
-    .exec(cometd("Disconnect").disconnect)
+    .feed(idFeeder).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
+    .feed(idFeeder).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+
+    .feed(uuidFeeder).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+
+    .feed(idFeeder).exec(cometd("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
+    .feed(idFeeder).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+    .feed(idFeeder).exec(cometd("Disconnect").disconnect())
 ```
+**DSL is still under development !!**
 
 ## Run ##
-- clone the project
-- download and install nodejs (this is the cometd test server to be able to test gatling cometD DSL) 
-- install the nodejs requirements (npm install)
-- run the server (node server.js)
-- run the example load test (sbt gatling:test)
+- Clone the project
+- Download and install [nodejs](http://nodejs.org/) 
+- Install required nodejs packages with the *npm install* command
+- Run the server from the project directory with the *node server.js* command
+- Run the example load test with the *sbt gatling:test* command
 
-**DSL is still under development !!**
+## Server side ##
+In order to be able to run and test the DSL we need a simple and easy to use cometD server. I picked [Faye](http://faye.jcoglan.com/) which is a publish-subscribe messaging system based on the Bayeux protocol running under nodejs.
+ 
+## DSL in details##
+- Configuration requires elements from the default Gatling API. The *wsBaseURl* points to my Faye local server 
+ ```
+   val httpConf = http
+     .wsBaseURL("ws://localhost:8000")
+     .wsReconnect
+     .wsMaxReconnects(3)
+     .disableFollowRedirect
+     .disableWarmUp
+ ```
+- Import the cometd package which contains all the necessary language elements 
+```
+    import org.kaloz.gatling.http.cometd._
+```
+- Open websocket connection to the server. The nature of cometD required some modifications in the Gatling engine. Instead of modifying 
+ it directly extends it with implicit conversions. The *registerPubSubProcessor* method forces Gatling to use my WsActor implementation to be able to listen on
+   published messages in the background
+```
+    .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+```
+- After the websocket connection there are two mandatory steps in cometD. The *handshake* and the *connect*. The *handshake* gives back the clientId which is 
+going to be used in every other subsequent requests. It is mandatory for cometD 
+```
+    .feed(idFeeder).exec(cometd("Handshake").handshake())
+    .feed(idFeeder).exec(cometd("Connect").connect())
+```
+- Each and every cometD protocol related method can be called with extended content. It is common use case that you have to authenticate the user during 
+the handshake. All you have to do is to call the handshake with the some extra information
+```
+    case class Authentication(name:String="user", password:String="password")
+    .feed(idFeeder).exec(cometd("Handshake").handshake(Handshake(ext=Autentication())))
+```
+- After the *handshake* and *connect* you are ready to send and receive messages. The easiest scenario is to send
+command to the server. Before I send the command I generate a new correlationId for my message. I use this id to be able 
+ to pair requests and responses. To be able to do this I have to instruct the extension to wait until a message arrives 
+ which has the same correlationId and some extra data. With this you could fine tune what do you regard as a successful response.
+ In my case I am waiting for a response message which has the same correlationId I sent with the request and I expect some extra string in the response. It could happen 
+ that the response arrives with the correct correlationId but instead of having *EchoedMessage* type in it it has let's *Exception*. In this case it won' consider it a 
+  valid response. It is up to the implementor to define the exit criteria. The listed string might be anywhere in the response but all of them shoul be there in the response!!
+```
+    .feed(uuidFeeder).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+```
+- It is easy to subscribe for some services with the *subscribe* method although it is bit more complicated compared to sending a command.
+The easiert situation is when you would like to subscribe to trigger some process which sends messages to the client but you don't want to process the response. In this case use *subscribeToPubSubProcessor* attribute with false value.
+The result is that you subscribe for a channel but if the server publishes something it won't be processed at Gatling's side but still generates load.
+The second case is a bit trickier. If you use this option the incoming message behind the scene will be sent to a processor Actor. This processor actor validates that all the required content can be found in the message
+ and after that using the provided extractor converts it to the defined type. If the conversion was successful the new object will be sent to an actor which was implemented by the user. 
+ I am going to show it later how you could implement your own. In your actor you could do whatever you want with the incoming message. In the example I am increasing a counter which drives how many command will be sent. 
+```
+    .feed(idFeeder).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+    .feed(idFeeder).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
+```
+- After the test you might want to unsubscribe and disconnect. The unsubscription removes all the previous subscription in Gatling as well so it stops listening and processing that type of subscription
+```
+    .feed(idFeeder).exec(cometd("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
+    .feed(idFeeder).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+    .feed(idFeeder).exec(cometd("Disconnect").disconnect())
+```
+
+## Processing pubished messages coming from the server ##
+If you would like to process the published messages you have to extends the *PubSubProcessorActor* class and create a new instance in the Gatling's actor system. Later on you could use this reference to obtain information about the background processes
+```
+val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
+```
+You have to implement the *messageReceive* method and process those types messages I mentioned at the subscription phase. In this example whenever the server sends a timer message it checks if it has *TriggeredTime* as a content. If so it converts it to 
+*PublishedMap* type and sends to itself. As the base class's receive method doesn't handle this case it will be passed to the client actor where I just increment a counter.
+```
+class Processor extends PubSubProcessorActor {
+
+  val counter = new AtomicLong(0)
+
+  def messageReceive: Actor.Receive = {
+    case PublishedMap(channel, data) =>
+      counter.getAndIncrement
+    case GetCounter =>
+      sender ! counter.get
+  }
+}
+```
+As I have the actor's reference I could ask it to give back some stored results. Based on those results the test could do different things. In my case I send command as long as the server doesn't publish 4 messages to the timer channel. But based on this technique
+you could implement more complex scenarios. Obviously the *Await* is not the best solution as it blocks but for me it worked well. I am looking into it how I could eliminate it.  
+```
+      .asLongAs(session => {
+      implicit val timeout = Timeout(5 seconds)
+      import akka.pattern.ask
+
+      val counterFuture = (processor ? GetCounter).mapTo[Long]
+      val counter = Await.result(counterFuture, timeout.duration)
+      counter < 5
+    }) {
+      feed(uuidFeeder).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+        .pause(2, 4)
+    }
+```
+What if you have different content in your pubished messages? In this case you have to pass your own extractor function to the subscription method.
+```
+    case class Reponse(...)
+    .feed(idFeeder).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime"), extractor: String => Published = { m => m.fromJson[List[Response]].get(0)}))
+```    
+    

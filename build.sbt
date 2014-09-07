@@ -1,3 +1,4 @@
+import io.gatling.sbt.GatlingPlugin
 import xerial.sbt.Sonatype.SonatypeKeys._
 
 sonatypeSettings
@@ -8,7 +9,7 @@ organization := "org.kaloz.gatling"
 
 profileName := "lachatak"
 
-version := "0.1-SNAPSHOT"
+version := "1.0.0-SNAPSHOT"
 
 scalaVersion := "2.10.4"
 
@@ -25,6 +26,7 @@ javacOptions ++= Seq("-Xlint:deprecation", "-encoding", "utf8", "-XX:MaxPermSize
 crossPaths := false
 
 val test = project.in(file("."))
+  .enablePlugins(GatlingPlugin)
   .settings(
     libraryDependencies ++= Seq(
       "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.0.0-RC3",

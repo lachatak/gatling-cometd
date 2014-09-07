@@ -32,16 +32,10 @@ class CometDGatlingTest extends Simulation with Logging {
 
   val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
-  val users = 1
+  val users = 2
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
-
-  def nextUserId = userIdGenerator.getAndIncrement
-
-  def nextId = idGenerator.getAndIncrement
-
-  def nextUUID = UUID.randomUUID.toString
 
   val httpConf = http
     .wsBaseURL("ws://localhost:8000")
@@ -50,17 +44,20 @@ class CometDGatlingTest extends Simulation with Logging {
     .disableFollowRedirect
     .disableWarmUp
 
+  val userIdFeeder = Iterator.continually(Map("userId" -> userIdGenerator.getAndIncrement))
+  val idFeeder = Iterator.continually(Map("id" -> idGenerator.getAndIncrement))
+  val uuidFeeder = Iterator.continually(Map("correlationId" -> UUID.randomUUID.toString))
+
   val scn = scenario("WebSocket")
-    .storeValue("userId", nextUserId)
+    .feed(userIdFeeder)
 
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
-    .storeValue("id", nextId).exec(cometd("Handshake").handshake())
+    .feed(idFeeder).exec(cometd("Handshake").handshake())
     .doIf(session => session.contains("clientId")) {
+    feed(idFeeder).exec(cometd("Connect").connect())
 
-    storeValue("id", nextId).exec(cometd("Connect").connect())
-
-      .storeValue("id", nextId).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
-      .storeValue("id", nextId).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+      .feed(idFeeder).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
+      .feed(idFeeder).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
       .asLongAs(session => {
       implicit val timeout = Timeout(5 seconds)
@@ -70,13 +67,13 @@ class CometDGatlingTest extends Simulation with Logging {
       val counter = Await.result(counterFuture, timeout.duration)
       counter < 5
     }) {
-      storeValue("correlationId", nextUUID).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      feed(uuidFeeder).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
         .pause(2, 4)
     }
 
-      .storeValue("id", nextId).exec(cometd("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
-      .storeValue("id", nextId).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-      .storeValue("id", nextId).exec(cometd("Disconnect").disconnect())
+      .feed(idFeeder).exec(cometd("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
+      .feed(idFeeder).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+      .feed(idFeeder).exec(cometd("Disconnect").disconnect())
   }
   //    .exec(ws("Close WS").close)
 

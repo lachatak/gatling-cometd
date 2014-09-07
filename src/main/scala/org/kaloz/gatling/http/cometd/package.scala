@@ -1,14 +1,10 @@
 package org.kaloz.gatling.http
 
-import java.util.concurrent.atomic.AtomicLong
-
 import com.typesafe.scalalogging.slf4j.Logging
 import io.gatling.core.Predef._
-import io.gatling.core.action.builder.SessionHookBuilder
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.check._
 import io.gatling.core.session._
-import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef._
 import io.gatling.http.action.ws._
 import io.gatling.http.check.ws.WsCheck
@@ -21,24 +17,12 @@ import scala.concurrent.duration._
 
 package object cometd {
 
-  private val setSessionValue = (session: Session, key: String, value: Any) => session.set(key, value)
-
   def cometd(requestName: Expression[String]) = new Ws(requestName)
-
-  def storeValue(key: String, value: => Any): ChainBuilder = ChainBuilder.chainOf(new SessionHookBuilder(setSessionValue(_, key, value), true))
 
   implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
     def registerPubSubProcessor = {
       new CometDOpenRequestBuilder(wsOpenRequestBuilder.commonAttributes, wsOpenRequestBuilder.wsName)
     }
-  }
-
-  implicit class ScenarioBuilderExtension(val scenarioBuilder: ScenarioBuilder) {
-    def storeValue(key: String, value: => Any): ScenarioBuilder = scenarioBuilder.exec(setSessionValue(_, key, value))
-  }
-
-  implicit class ChainBuilderExtension(val chainBuilder: ChainBuilder) {
-    def storeValue(key: String, value: => Any): ChainBuilder = chainBuilder.exec(setSessionValue(_, key, value))
   }
 
   implicit class WsCometDExtension(val ws: Ws)(implicit requestTimeOut: FiniteDuration) extends Logging {
