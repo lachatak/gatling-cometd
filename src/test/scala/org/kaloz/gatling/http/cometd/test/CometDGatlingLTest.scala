@@ -13,6 +13,7 @@ import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
 import org.kaloz.gatling.http.action.cometd.PubSubProcessorActor
 import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
+import org.kaloz.gatling.http.cometd.Predef._
 import org.kaloz.gatling.http.cometd.test.Processor.GetCounter
 
 import scala.concurrent.Await
@@ -25,8 +26,6 @@ object CometDGatlingTest extends App {
 }
 
 class CometDGatlingTest extends Simulation with Logging {
-
-  import org.kaloz.gatling.http.cometd._
 
   case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
 

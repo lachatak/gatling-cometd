@@ -1,4 +1,4 @@
-package org.kaloz.gatling.http
+package org.kaloz.gatling.http.cometd
 
 import com.typesafe.scalalogging.slf4j.Logging
 import io.gatling.core.Predef._
@@ -15,7 +15,7 @@ import org.kaloz.gatling.http.request.builder.cometd.CometDOpenRequestBuilder
 
 import scala.concurrent.duration._
 
-package object cometd {
+object Predef {
 
   def cometd(requestName: Expression[String]) = new Ws(requestName)
 
