@@ -32,8 +32,8 @@ In order to be able to run and test the DSL we need a simple and easy to use com
 
 **DSL is still under development !!**
 
-- Configuration requires elements from the default Gatling API. The *wsBaseURl* points to my Faye local server 
- ```
+- Configuration requires elements from the default Gatling API. The *wsBaseURl* points to my Faye local server
+```
    val httpConf = http
      .wsBaseURL("ws://localhost:8000")
      .wsReconnect
@@ -45,31 +45,23 @@ In order to be able to run and test the DSL we need a simple and easy to use com
 ```
     import org.kaloz.gatling.http.cometd._
 ```
-- Open websocket connection to the server. The nature of cometD required some modifications in the Gatling engine. Instead of modifying 
- it directly extends it with implicit conversions. The *registerPubSubProcessor* method forces Gatling to use my WsActor implementation to be able to listen on
-   published messages in the background
+- Open websocket connection to the server. The nature of cometD required some modifications in the Gatling engine. Instead of modifying it directly extends it with implicit conversions. The *registerPubSubProcessor* method forces Gatling to use my WsActor implementation to be able to listen on published messages in the background
 ```
     .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
 ```
-- After the websocket connection there are two mandatory steps in cometD. The *handshake* and the *connect*. The *handshake* gives back the clientId which is 
-going to be used in every other subsequent requests. It is mandatory for cometD 
+- After the websocket connection there are two mandatory steps in cometD. The *handshake* and the *connect*. The *handshake* gives back the clientId which is going to be used in every other subsequent requests. It is mandatory for cometD 
 ```
     .feed(idFeeder).exec(cometd("Handshake").handshake())
     .feed(idFeeder).exec(cometd("Connect").connect())
 ```
-- Each and every cometD protocol related method can be called with extended content. It is common use case that you have to authenticate the user during 
-the handshake. All you have to do is to call the handshake with the some extra information
+- Each and every cometD protocol related method can be called with extended content. It is common use case that you have to authenticate the user during the handshake. All you have to do is to call the handshake with the some extra information
 ```
     case class Authentication(name:String="user", password:String="password")
     .feed(idFeeder).exec(cometd("Handshake").handshake(Handshake(ext=Autentication())))
 ```
 - After the *handshake* and *connect* you are ready to send and receive messages. The easiest scenario is to send
-command to the server. Before I send the command I generate a new correlationId for my message. I use this id to be able 
- to pair requests and responses. To be able to do this I have to instruct the extension to wait until a message arrives 
- which has the same correlationId and some extra data. With this you could fine tune what do you regard as a successful response.
- In my case I am waiting for a response message which has the same correlationId I sent with the request and I expect some extra string in the response. It could happen 
- that the response arrives with the correct correlationId but instead of having *EchoedMessage* type in it it has let's *Exception*. In this case it won' consider it a 
-  valid response. It is up to the implementor to define the exit criteria. The listed string might be anywhere in the response but all of them shoul be there in the response!!
+command to the server. Before I send the command I generate a new correlationId for my message. I use this id to be able to pair requests and responses. To be able to do this I have to instruct the extension to wait until a message arrives which has the same correlationId and some extra data. With this you could fine tune what do you regard as a successful response.
+In my case I am waiting for a response message which has the same correlationId I sent with the request and I expect some extra string in the response. It could happen that the response arrives with the correct correlationId but instead of having *EchoedMessage* type in it it has let's *Exception*. In this case it won' consider it a valid response. It is up to the implementor to define the exit criteria. The listed string might be anywhere in the response but all of them shoul be there in the response!!
 ```
     .feed(uuidFeeder).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 ```
@@ -91,12 +83,12 @@ The second case is a bit trickier. If you use this option the incoming message b
 ```
 
 ## Processing pubished messages coming from the server ##
+
 If you would like to process the published messages you have to extends the *PubSubProcessorActor* class and create a new instance in the Gatling's actor system. Later on you could use this reference to obtain information about the background processes
 ```
-val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
+    val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
 ```
-You have to implement the *messageReceive* method and process those types messages I mentioned at the subscription phase. In this example whenever the server sends a timer message it checks if it has *TriggeredTime* as a content. If so it converts it to 
-*PublishedMap* type and sends to itself. As the base class's receive method doesn't handle this case it will be passed to the client actor where I just increment a counter.
+You have to implement the *messageReceive* method and process those types messages I mentioned at the subscription phase. In this example whenever the server sends a timer message it checks if it has *TriggeredTime* as a content. If so it converts it to *PublishedMap* type and sends to itself. As the base class's receive method doesn't handle this case it will be passed to the client actor where I just increment a counter.
 ```
 class Processor extends PubSubProcessorActor {
 
@@ -110,8 +102,7 @@ class Processor extends PubSubProcessorActor {
   }
 }
 ```
-As I have the actor's reference I could ask it to give back some stored results. Based on those results the test could do different things. In my case I send command as long as the server doesn't publish 4 messages to the timer channel. But based on this technique
-you could implement more complex scenarios. Obviously the *Await* is not the best solution as it blocks but for me it worked well. I am looking into it how I could eliminate it.  
+As I have the actor's reference I could ask it to give back some stored results. Based on those results the test could do different things. In my case I send command as long as the server doesn't publish 4 messages to the timer channel. But based on this technique you could implement more complex scenarios. Obviously the *Await* is not the best solution as it blocks but for me it worked well. I am looking into it how I could eliminate it.  
 ```
       .asLongAs(session => {
       implicit val timeout = Timeout(5 seconds)
