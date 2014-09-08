@@ -1,4 +1,4 @@
-# gatling-cometd #
+# gatling-cometd [![Build Status](https://travis-ci.org/lachatak/gatling-cometd.svg?branch=master)](https://travis-ci.org/lachatak/gatling-cometd)
 
 This extension is build on top of [Gatling](http://gatling.io/) websocket functionality to support cometD testing via cometD DSL.
 ```scala
