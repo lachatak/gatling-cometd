@@ -4,7 +4,7 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 ```scala
     import org.kaloz.gatling.http.cometd.Predef._
 
-    .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+    .exec(cometd("Open").open("/bayeux").registerPubSubProcessor)
     .feed(idFeeder).exec(cometd("Handshake").handshake())
     .feed(idFeeder).exec(cometd("Connect").connect())
 
