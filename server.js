@@ -6,7 +6,7 @@ faye.logger = function (message) {
 }
 
 var server = http.createServer(),
-    bayeux = new faye.NodeAdapter({mount: '/beyaux', timeout: 45});
+    bayeux = new faye.NodeAdapter({mount: '/bayeux', timeout: 45});
 
 var bayeuxClient = bayeux.getClient();
 var timers = {};
