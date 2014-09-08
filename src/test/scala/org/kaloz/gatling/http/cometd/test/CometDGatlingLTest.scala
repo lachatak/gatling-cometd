@@ -50,7 +50,7 @@ class CometDGatlingTest extends Simulation with Logging {
   val scn = scenario("WebSocket")
     .feed(userIdFeeder)
 
-    .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+    .exec(cometd("Open").open("/bayeux").registerPubSubProcessor)
     .feed(idFeeder).exec(cometd("Handshake").handshake())
     .doIf(session => session.contains("clientId")) {
     feed(idFeeder).exec(cometd("Connect").connect())
