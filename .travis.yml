@@ -3,16 +3,16 @@ scala:
 - 2.10.4
 before_script: ./make_credentials.sh
 script: sbt clean test
-
 notifications:
   email:
     recipients:
     - krisztian.lachata@gmail.com
-    
+
 env:
   global:
-    - secure: ""
+  - secure: On5aDMoosvTaCAf/dtsExdTMbOpsz//9ozDvxx9RX6Gz88uFwp5YMzM9/9DSqsDIF+81+YFp6fuKFjuRfVUqrAYXmvSrXjzAp2YmJVihPp8mG+2YbckvFfBI7L8+xEVfnFD/BpewkXUk4ODyuE183lEnqmJvge7/MfUfh65Ijno=
+  - secure: hkSKqxkSgIsULBCClPbSanIVPzEFtTEUZuhulbJztGFbdYKlKX6k8DH+Oa3tFo5taY9+2m5MdI8Jol//qzqz2mvXnbBmDffKYqyCxv2U2V8FT2qIMdeD0JSi3AIk63KNcH5tmf67rWGyPzSEQLYkEaB0L4ZFepKveTgtZ+Ql040=
 
-# Publish to Sonatype if building master
 after_success:
-  - "[[ $TRAVIS_BRANCH == \"master\" ]] && [[ $TRAVIS_PULL_REQUEST == \"false\" ]] && sbt publish"
+- ! '[[ $TRAVIS_BRANCH == "master" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]] &&
+  sbt publish'
