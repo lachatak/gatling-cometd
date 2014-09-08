@@ -1,6 +1,6 @@
 language: scala
 before_script: ./make_credentials.sh
-script: sbt test
+script: sbt clean test
 
 env:
   global:
