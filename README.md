@@ -49,7 +49,7 @@ In order to be able to run and test the DSL we need a simple and easy to use com
 ### Open websocket connection ###
 Open websocket connection to the server. The nature of cometD the extension required some modifications in the Gatling engine. Instead of modifying the Gatling itself I use implicit conversions to extend the functionality. The *registerPubSubProcessor* method forces Gatling to use my own WsActor implementation to be able to listen on published messages in the background.
 ```scala
-    .exec(cometd("Open").open("/beyaux").registerPubSubProcessor)
+    .exec(cometd("Open").open("/bayeux").registerPubSubProcessor)
 ```
 ### Handshake and connect ###
 After successful websocket open there are two mandatory steps in cometD. The *handshake* and the *connect*. The *handshake* gives back the clientId which is going to be used in every other subsequent requests. It is mandatory for cometD.
