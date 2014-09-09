@@ -5,7 +5,7 @@ import xerial.sbt.Sonatype.SonatypeKeys._
 object Publish {
 
   lazy val sonatypeSettings = Seq(
-    profileName := "org.kaloz",
+    profileName := "lachatak",
     homepage := Some(url("https://github.com/lachatak/gatling-cometd")),
     publishMavenStyle := true,
     publishArtifact in Test := false,
