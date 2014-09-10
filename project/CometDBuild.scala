@@ -17,5 +17,5 @@ object CometDBuild extends Build {
     .settings(libraryDependencies ++= cometDDeps)
     .settings(sonatypeSettings: _*)
     .settings(releaseToBintraySettings: _*)
-    //.enablePlugins(GatlingPlugin)
+    .enablePlugins(GatlingPlugin)
 }
