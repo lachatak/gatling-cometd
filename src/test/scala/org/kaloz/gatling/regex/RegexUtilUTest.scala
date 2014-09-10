@@ -1,9 +1,9 @@
 package org.kaloz.gatling.regex
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.AllExpectations
 import org.junit.runner.RunWith
+import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
+import org.specs2.specification.AllExpectations
 
 @RunWith(classOf[JUnitRunner])
 class RegexUtilUTest extends Specification with AllExpectations {

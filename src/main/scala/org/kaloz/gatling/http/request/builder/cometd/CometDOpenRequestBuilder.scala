@@ -1,6 +1,5 @@
 package org.kaloz.gatling.http.request.builder.cometd
 
-import akka.actor.ActorRef
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session._
 import io.gatling.http.Predef._

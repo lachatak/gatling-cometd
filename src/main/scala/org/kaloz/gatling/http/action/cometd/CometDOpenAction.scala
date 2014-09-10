@@ -11,12 +11,12 @@ import io.gatling.http.check.ws.WsCheck
 import io.gatling.http.config.HttpProtocol
 
 class CometDOpenAction(
-                     requestName: Expression[String],
-                     wsName: String,
-                     request: Expression[Request],
-                     check: Option[WsCheck],
-                     val next: ActorRef,
-                     protocol: HttpProtocol) extends Interruptable {
+                        requestName: Expression[String],
+                        wsName: String,
+                        request: Expression[Request],
+                        check: Option[WsCheck],
+                        val next: ActorRef,
+                        protocol: HttpProtocol) extends Interruptable {
 
   def execute(session: Session): Unit = {
 
