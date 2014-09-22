@@ -25,6 +25,11 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 - Run the server from the project directory with the *node server.js* command
 - Run the example load test with the *sbt gatling:test* command
 
+If you would like to use the cometd extension in your own project you should add the following sbt dependency:
+```scala
+    "org.kaloz.gatling" % "http-cometd" % "1.0.0-SNAPSHOT" % "test"
+```
+
 ## Server side ##
 In order to be able to run and test the DSL we need a simple and easy to use cometD server. I picked [Faye](http://faye.jcoglan.com/) which is a publish-subscribe messaging system based on the Bayeux protocol running under nodejs.
  
