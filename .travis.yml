@@ -17,4 +17,4 @@ env:
   - secure: "hkSKqxkSgIsULBCClPbSanIVPzEFtTEUZuhulbJztGFbdYKlKX6k8DH+Oa3tFo5taY9+2m5MdI8Jol//qzqz2mvXnbBmDffKYqyCxv2U2V8FT2qIMdeD0JSi3AIk63KNcH5tmf67rWGyPzSEQLYkEaB0L4ZFepKveTgtZ+Ql040="
 
 after_success:
-- ! '[[ $TRAVIS_BRANCH == "master" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]] && echo ~/.sbt/.credentials'
+- ! '[[ $TRAVIS_BRANCH == "master" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]] && cat ~/.sbt/.credentials'
