@@ -1,5 +1,5 @@
 #!/bin/sh
 
-cd http-cometd
+cd http-cometd-example
 npm install
 node server.js
