@@ -27,4 +27,9 @@ object BuildSettings {
       "-XX:MaxPermSize=256M"
     )
   )
+
+  lazy val noPublishing = Seq(
+    publish := (),
+    publishLocal := ()
+  )
 }

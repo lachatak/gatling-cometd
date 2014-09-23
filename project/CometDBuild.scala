@@ -13,8 +13,9 @@ object CometDBuild extends Build {
   }
 
   lazy val root = Project("root", file("."))
-    .settings(basicSettings: _*)
     .aggregate(cometd, example)
+    .settings(basicSettings: _*)
+    .settings(noPublishing: _*)
 
   lazy val cometd = Project("http-cometd", file("http-cometd"))
     .settings(basicSettings: _*)
@@ -27,5 +28,6 @@ object CometDBuild extends Build {
     .dependsOn(cometd)
     .settings(basicSettings: _*)
     .settings(libraryDependencies ++= cometDExampleDeps)
+    .settings(noPublishing: _*)
     .enablePlugins(GatlingPlugin)
 }
