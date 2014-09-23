@@ -2,8 +2,7 @@ language: scala
 scala:
 - 2.10.4
 
-before_script:
-- { ./make_credentials.sh; cd http-cometd-example; npm install; node server.js}
+before_script: travis/before_script.sh
 
 script: sbt clean test
 
