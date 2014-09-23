@@ -5,7 +5,6 @@ object BuildSettings {
 
   lazy val basicSettings = Seq(
     version := "1.0.0-SNAPSHOT",
-    name := "http-cometd",
     organization := "org.kaloz.gatling",
     organizationHomepage := Some(new URL("http://waytothepiratecove.blogspot.co.uk")),
     description := "Gatling cometD extension",

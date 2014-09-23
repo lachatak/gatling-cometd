@@ -55,6 +55,7 @@ with MockitoSugar {
     when(wsTx.session).thenReturn(session)
     when(wsTx.next).thenReturn(next.ref)
     when(wsTx.check).thenReturn(check)
+    when(wsTx.copy(session)).thenReturn(wsTx)
     when(session.set(anyString(), isA(classOf[ActorRef]))).thenReturn(session)
 
     val cometDActor = TestActorRef(new CometDActor("name"))

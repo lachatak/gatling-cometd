@@ -2,7 +2,8 @@ import sbt._
 
 object Version {
 
-  val gatling       = "2.0.0-RC4"
+  val httpCometd    = "1.0.0-SNAPSHOT"
+  val gatling       = "2.0.0-RC5"
   val gatlingTest   = "1.0-RC1"
   val akka          = "2.3.4"
   val jackson       = "2.4.1"
@@ -11,6 +12,7 @@ object Version {
 }
 
 object Library {
+  val httpCometd      = "org.kaloz.gatling"              %  "http-cometd"                    % Version.httpCometd
   val gatling         = "io.gatling.highcharts"          %  "gatling-charts-highcharts"      % Version.gatling
   val jacksonCore     = "com.fasterxml.jackson.core"     %  "jackson-databind"               % Version.jackson
   val jacksonDatatype = "com.fasterxml.jackson.datatype" %  "jackson-datatype-joda"          % Version.jackson
@@ -30,9 +32,13 @@ object Dependencies {
     jacksonCore,
     jacksonDatatype,
     jacksonModule,
-    gatlingTest       % "test",
     akkaTestkit       % "test",
     spec2             % "test",
     scalaTest         % "test"
+  )
+
+  val cometDExampleDeps = List(
+    httpCometd        % "test",
+    gatlingTest       % "test"
   )
 }

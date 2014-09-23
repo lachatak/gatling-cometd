@@ -1,4 +1,4 @@
-package org.kaloz.gatling.http.cometd.test
+package org.kaloz.gatling.http.cometd
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
@@ -14,7 +14,7 @@ import io.gatling.http.Predef._
 import org.kaloz.gatling.http.action.cometd.PubSubProcessorActor
 import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
 import org.kaloz.gatling.http.cometd.Predef._
-import org.kaloz.gatling.http.cometd.test.Processor.GetCounter
+import org.kaloz.gatling.http.cometd.Processor.GetCounter
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
