@@ -9,7 +9,7 @@ notifications:
     - krisztian.lachata@gmail.com
 after_success:
 - ! '[[ $TRAVIS_BRANCH == "master" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]] &&
-  cat ~/.sbt/.credentials'
+  sbt publish'
 env:
   global:
   - secure: QME+1XjudXqfMGjj1bgOIKAs6fGufFam/kfZHgCLaU+YcSmalJTSaB/eLQw0f71TaDn6g8xxfOrO38FkeJFcTve6R6klfgfBsKW7z73tBtuRb0TxrjBJApGEfBsBWohRfbM3FJyt92jBEDePec5VeTfA7RNVgw2Y9gvNkvsg9U0=
