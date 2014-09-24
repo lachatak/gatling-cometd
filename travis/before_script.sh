@@ -1,3 +1,3 @@
 #!/bin/sh
-./make_credentials.sh
-./start_server.sh
+travis/make_credentials.sh
+travis/start_server.sh
