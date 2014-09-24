@@ -2,4 +2,4 @@
 
 cd http-cometd-example
 npm install
-node server.js
+nohup node server.js &
