@@ -76,10 +76,9 @@ class CometDGatlingTest extends Simulation with Logging {
   }
   //    .exec(ws("Close WS").close)
 
-  setUp(
-    scn.inject(rampUsers(users) over 1)
-      .protocols(httpConf)
-  )
+  setUp(scn.inject(rampUsers(users) over 1).protocols(httpConf))
+    .assertions(global.successfulRequests.percent.is(100)
+    )
 }
 
 class Processor extends PubSubProcessorActor {
