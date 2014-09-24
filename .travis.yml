@@ -1,20 +1,16 @@
 language: scala
 scala:
 - 2.10.4
-
 before_script: travis/before_script.sh
-
 script: sbt clean test
-
 notifications:
   email:
     recipients:
     - krisztian.lachata@gmail.com
-
+after_success:
+- ! '[[ $TRAVIS_BRANCH == "master" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]] &&
+  cat ~/.sbt/.credentials'
 env:
   global:
-  - secure: "On5aDMoosvTaCAf/dtsExdTMbOpsz//9ozDvxx9RX6Gz88uFwp5YMzM9/9DSqsDIF+81+YFp6fuKFjuRfVUqrAYXmvSrXjzAp2YmJVihPp8mG+2YbckvFfBI7L8+xEVfnFD/BpewkXUk4ODyuE183lEnqmJvge7/MfUfh65Ijno="
-  - secure: "hkSKqxkSgIsULBCClPbSanIVPzEFtTEUZuhulbJztGFbdYKlKX6k8DH+Oa3tFo5taY9+2m5MdI8Jol//qzqz2mvXnbBmDffKYqyCxv2U2V8FT2qIMdeD0JSi3AIk63KNcH5tmf67rWGyPzSEQLYkEaB0L4ZFepKveTgtZ+Ql040="
-
-after_success:
-- ! '[[ $TRAVIS_BRANCH == "master" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]] && cat ~/.sbt/.credentials'
+  - secure: QME+1XjudXqfMGjj1bgOIKAs6fGufFam/kfZHgCLaU+YcSmalJTSaB/eLQw0f71TaDn6g8xxfOrO38FkeJFcTve6R6klfgfBsKW7z73tBtuRb0TxrjBJApGEfBsBWohRfbM3FJyt92jBEDePec5VeTfA7RNVgw2Y9gvNkvsg9U0=
+  - secure: O7+wf1Y9WIKliYlv/Gpmw4iLw7G23FJgXmgWc2jhsaLXg0QQNEpLhi6EOH3SGywsenYQByKg14I+PxvegFC7HmdwfVXWWN5oiKES6d9/UkpF6t756Cuoq/FIXcp+iUcJ7rmQxLcazuFsP7fY2okyq6qMOF9R5D40FLf36nxF6r0=
