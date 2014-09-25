@@ -4,7 +4,6 @@ import sbt._
 object BuildSettings {
 
   lazy val basicSettings = Seq(
-    version := "1.0.0-SNAPSHOT",
     organization := "org.kaloz.gatling",
     organizationHomepage := Some(new URL("http://waytothepiratecove.blogspot.co.uk")),
     description := "Gatling cometD extension",
@@ -26,7 +25,7 @@ object BuildSettings {
       "utf8",
       "-XX:MaxPermSize=256M"
     )
-  )
+  ) ++ Publish.settings ++ Release.settings
 
   lazy val noPublishing = Seq(
     publish := (),

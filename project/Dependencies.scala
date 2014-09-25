@@ -2,7 +2,7 @@ import sbt._
 
 object Version {
 
-  val httpCometd    = "1.0.0-SNAPSHOT"
+  val httpCometd    = "latest.integration"
   val gatling       = "2.0.0-RC5"
   val gatlingTest   = "1.0-RC1"
   val akka          = "2.3.4"

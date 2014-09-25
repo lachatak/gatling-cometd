@@ -1,4 +1,4 @@
-package org.kaloz.gatling.http.cometd
+package org.kaloz.gatling.http.cometd.test
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
@@ -14,7 +14,7 @@ import io.gatling.http.Predef._
 import org.kaloz.gatling.http.action.cometd.PubSubProcessorActor
 import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
 import org.kaloz.gatling.http.cometd.Predef._
-import org.kaloz.gatling.http.cometd.Processor.GetCounter
+import org.kaloz.gatling.http.cometd.test.Processor.GetCounter
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -47,16 +47,16 @@ class CometDGatlingTest extends Simulation with Logging {
   val idFeeder = Iterator.continually(Map("id" -> idGenerator.getAndIncrement))
   val uuidFeeder = Iterator.continually(Map("correlationId" -> UUID.randomUUID.toString))
 
-  val scn = scenario("WebSocket")
+  val scn = scenario("cometD")
     .feed(userIdFeeder)
 
-    .exec(cometd("Open").open("/bayeux").registerPubSubProcessor)
-    .feed(idFeeder).exec(cometd("Handshake").handshake())
+    .exec(cometD("Open").open("/bayeux"))
+    .feed(idFeeder).exec(cometD("Handshake").handshake())
     .doIf(session => session.contains("clientId")) {
-    feed(idFeeder).exec(cometd("Connect").connect())
+    feed(idFeeder).exec(cometD("Connect").connect())
 
-      .feed(idFeeder).exec(cometd("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
-      .feed(idFeeder).exec(cometd("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
+      .feed(idFeeder).exec(cometD("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
+      .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
       .asLongAs(session => {
       implicit val timeout = Timeout(5 seconds)
@@ -66,15 +66,15 @@ class CometDGatlingTest extends Simulation with Logging {
       val counter = Await.result(counterFuture, timeout.duration)
       counter < 5
     }) {
-      feed(uuidFeeder).exec(cometd("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
         .pause(2, 4)
     }
 
-      .feed(idFeeder).exec(cometd("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
-      .feed(idFeeder).exec(cometd("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-      .feed(idFeeder).exec(cometd("Disconnect").disconnect())
+      .feed(idFeeder).exec(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
+      .feed(idFeeder).exec(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+      .feed(idFeeder).exec(cometD("Disconnect").disconnect())
   }
-  //    .exec(ws("Close WS").close)
+  //    .exec(cometD("Close cometD").close)
 
   setUp(scn.inject(rampUsers(users) over 1).protocols(httpConf))
     .assertions(global.successfulRequests.percent.is(100)

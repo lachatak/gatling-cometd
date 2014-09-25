@@ -8,42 +8,35 @@ import io.gatling.core.session._
 import io.gatling.http.Predef._
 import io.gatling.http.action.ws._
 import io.gatling.http.check.ws.WsCheck
-import io.gatling.http.request.builder.ws.{Ws, WsOpenRequestBuilder}
 import org.kaloz.gatling.http.action.cometd.{SubscribeMessage, UnsubscribeMessage}
 import org.kaloz.gatling.http.cometd.CometDMessages._
-import org.kaloz.gatling.http.request.builder.cometd.CometDOpenRequestBuilder
+import org.kaloz.gatling.http.request.builder.cometd.CometD
 
 import scala.concurrent.duration._
 
 object Predef {
 
-  def cometd(requestName: Expression[String]) = new Ws(requestName)
+  def cometD(requestName: Expression[String]) = new CometD(requestName)
 
-  implicit class WsOpenRequestBuilder2CometDBuilder(val wsOpenRequestBuilder: WsOpenRequestBuilder) {
-    def registerPubSubProcessor = {
-      new CometDOpenRequestBuilder(wsOpenRequestBuilder.commonAttributes, wsOpenRequestBuilder.wsName)
-    }
-  }
-
-  implicit class WsCometDExtension(val ws: Ws)(implicit requestTimeOut: FiniteDuration) extends Logging {
+  implicit class CometDExtension(val cometd: CometD)(implicit requestTimeOut: FiniteDuration) extends Logging {
 
     import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
     val cometDProtocolMatchers = Set("\"id\":\"${id}\"", "\"successful\":true")
 
     def handshake(handshake: Handshake = Handshake()) = {
-      ws.sendText(handshake.toJson).checkResponse(fn = { message =>
+      cometd.sendText(handshake.toJson).checkResponse(fn = { message =>
         val ack = message.fromJson[List[Ack]].get(0)
         ack.clientId.get
       }, matchers = cometDProtocolMatchers + "\"clientId\"", saveAs = Some("clientId"))
     }
 
     def connect(connect: Connect = Connect()) = {
-      ws.sendText(connect.toJson).checkResponse(matchers = cometDProtocolMatchers)
+      cometd.sendText(connect.toJson).checkResponse(matchers = cometDProtocolMatchers)
     }
 
     def subscribe(subscription: String, matchers: Set[String] = Set.empty, subscribeToPubSubProcessor: Boolean = true, extractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
-      ws.sendText(Subscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
+      cometd.sendText(Subscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
         if (subscribeToPubSubProcessor) {
           GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, matchers, extractor))
         }
@@ -52,14 +45,14 @@ object Predef {
     }
 
     def unsubscribe(subscription: String) = {
-      ws.sendText(Unsubscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
+      cometd.sendText(Unsubscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
         GatlingActorSystem.instance.eventStream.publish(UnsubscribeMessage(subscription))
         message
       }, matchers = cometDProtocolMatchers)
     }
 
     def publish(channel: String, data: Any) = {
-      ws.sendText(Publish(channel = channel, data = data).toJson)
+      cometd.sendText(Publish(channel = channel, data = data).toJson)
     }
 
     def sendCommand(channel: String, data: Any) = {
@@ -67,11 +60,11 @@ object Predef {
     }
 
     def disconnect(disconnect: Disconnect = Disconnect()) = {
-      ws.sendText(disconnect.toJson).checkResponse(matchers = cometDProtocolMatchers)
+      cometd.sendText(disconnect.toJson).checkResponse(matchers = cometDProtocolMatchers)
     }
   }
 
-  implicit class CometDWsSendActionBuilder(val wsSendActionBuilder: WsSendActionBuilder)(implicit requestTimeOut: FiniteDuration) extends Logging {
+  implicit class CometDSendActionBuilder(val wsSendActionBuilder: WsSendActionBuilder)(implicit requestTimeOut: FiniteDuration) extends Logging {
     def checkResponse(fn: String => String = { m => m}, matchers: Set[String], saveAs: Option[String] = None) = {
       val response = this.response(fn, matchers)
       wsSendActionBuilder.check(if (saveAs.isDefined)

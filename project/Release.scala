@@ -1,37 +1,17 @@
-import sbt._
-import sbt.Keys._
+import scala.util.Properties.{ propOrEmpty, propOrNone }
 
 import com.typesafe.sbt.SbtPgp.PgpKeys._
-import sbtrelease._
 import sbtrelease.ReleasePlugin._
 import sbtrelease.ReleasePlugin.ReleaseKeys._
-import sbtrelease.ReleaseStateTransformations._
 
 object Release {
 
-  lazy val releaseToCentralSettings = releaseSettings ++ Seq(
+  lazy val settings = releaseSettings ++ Seq(
     crossBuild := false,
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runClean,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishSignedStep,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    )
+    publishArtifactsAction := publishSigned.value,
+    releaseVersion := { _ => propOrEmpty("releaseVersion")},
+    nextVersion := { _ => propOrEmpty("developmentVersion")},
+    pgpPassphrase := propOrNone("gpg.passphrase").map(_.toCharArray)
   )
 
-  lazy val releaseToBintraySettings = releaseSettings
-
-  private val publishSignedStep = ReleaseStep(
-    action = st => {
-      val extracted = Project.extract(st)
-      val ref = extracted.get(thisProjectRef)
-      extracted.runAggregated(publishSigned in Global in ref, st)
-    })
 }

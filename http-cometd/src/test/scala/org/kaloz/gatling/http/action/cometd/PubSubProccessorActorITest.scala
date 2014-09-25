@@ -60,14 +60,15 @@ with BeforeAndAfterAll {
     system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
   }
 
-}
+  class PubSubProccessorActorStub extends PubSubProcessorActor {
 
-class PubSubProccessorActorStub extends PubSubProcessorActor {
+    var received: Option[TestObject] = None
 
-  var received: Option[TestObject] = None
+    override def messageReceive: Receive = {
+      case t@TestObject(_, _) => received = Some(t)
 
-  override def messageReceive: Receive = {
-    case t@TestObject(_, _) => received = Some(t)
-
+    }
   }
+
 }
+
