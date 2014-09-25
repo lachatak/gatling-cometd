@@ -21,9 +21,9 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 ## Run ##
 - Clone the project
 - Download and install [nodejs](http://nodejs.org/) 
-- Install required nodejs packages with the *npm install* command
-- Run the server from the project directory with the *node server.js* command
-- Run the example load test with the *sbt gatling:test* command
+- Switch to the http-cometd-example project and install required nodejs packages with the *npm install* command
+- Run the server from the http-cometd-example project directory with the *node server.js* command
+- Run the example load test with the *sbt gatling:test* command from the root project
 
 If you would like to use the cometD extension in your own project you should add the following sbt dependency:
 ```scala
