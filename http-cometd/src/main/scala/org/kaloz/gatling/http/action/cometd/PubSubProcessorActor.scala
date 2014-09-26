@@ -34,7 +34,8 @@ abstract class PubSubProcessorActor extends Actor with ActorLogging {
       for {
         (regex, extractor) <- subscriptions.values
         matching <- regex.findFirstIn(message)
-      } yield self ! extractor(matching)
+        result = extractor(matching)
+      } yield self ! result
   }
 
   def messageReceive: Actor.Receive
