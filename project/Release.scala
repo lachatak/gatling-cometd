@@ -7,7 +7,6 @@ import sbtrelease.ReleasePlugin.ReleaseKeys._
 object Release {
 
   lazy val settings = releaseSettings ++ Seq(
-    crossBuild := false,
     publishArtifactsAction := publishSigned.value,
     releaseVersion := { _ => propOrEmpty("releaseVersion")},
     nextVersion := { _ => propOrEmpty("developmentVersion")},

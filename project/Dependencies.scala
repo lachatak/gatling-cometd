@@ -2,7 +2,6 @@ import sbt._
 
 object Version {
 
-  val httpCometd    = "latest.integration"
   val gatling       = "2.0.0-RC5"
   val gatlingTest   = "1.0-RC1"
   val akka          = "2.3.4"
@@ -12,7 +11,6 @@ object Version {
 }
 
 object Library {
-  val httpCometd      = "org.kaloz.gatling"              %  "http-cometd"                    % Version.httpCometd
   val gatling         = "io.gatling.highcharts"          %  "gatling-charts-highcharts"      % Version.gatling
   val jacksonCore     = "com.fasterxml.jackson.core"     %  "jackson-databind"               % Version.jackson
   val jacksonDatatype = "com.fasterxml.jackson.datatype" %  "jackson-datatype-joda"          % Version.jackson
@@ -38,7 +36,6 @@ object Dependencies {
   )
 
   val cometDExampleDeps = List(
-    httpCometd        % "test",
     gatlingTest       % "test"
   )
 }
