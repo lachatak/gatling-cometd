@@ -27,7 +27,7 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
 
 If you would like to use the cometD extension in your own project you should add the following sbt dependency:
 ```scala
-    "org.kaloz.gatling" % "http-cometd" % "1.1.0-RC1" % "test"
+    "org.kaloz.gatling" % "http-cometd" % "1.0.0-RC1" % "test"
 ```
 
 ## Server side ##
