@@ -3,7 +3,7 @@ import sbt._
 object Version {
 
   val gatling       = "2.0.0-RC6"
-  val gatlingTest   = "1.0-RC5"
+  val gatlingTest   = "1.0-RC6"
   val akka          = "2.3.4"
   val jackson       = "2.4.1"
   val scalaTest     = "2.2.0"
