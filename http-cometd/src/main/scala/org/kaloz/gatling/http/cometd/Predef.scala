@@ -65,7 +65,7 @@ object Predef {
   }
 
   implicit class CometDSendActionBuilder(val wsSendActionBuilder: WsSendActionBuilder)(implicit requestTimeOut: FiniteDuration) extends Logging {
-    def checkResponse(fn: String => String = { m => m}, matchers: Set[String], saveAs: Option[String] = None) = {
+    def checkResponse(matchers: Set[String], fn: String => String = { m => m}, saveAs: Option[String] = None) = {
       val response = this.response(fn, matchers)
       wsSendActionBuilder.check(if (saveAs.isDefined)
         response.saveAs(saveAs.get)
