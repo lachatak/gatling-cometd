@@ -91,6 +91,23 @@ After the test you might want to unsubscribe and disconnect. The unsubscription 
     .feed(idFeeder).exec(cometD("Disconnect").disconnect())
 ```
 
+## Check response ##
+It is common problem that you would like to accept cometD responses which has specific content. To support this demad there is a checkResponse method what you can use after sending a command. It has 3 parameters:
+```scala
+    def checkResponse(matchers: Set[String], fn: String => String = { m => m}, saveAs: Option[String] = None)
+```
+- using the *matchers* parameter you could pass strings which must be in the response string in any order
+- you might want to extract something important from the response if all the required strings can be found in the response. In this case you could pass an *fn* function. The input parameter is the original message. By default it gives back the original string. If you need something else pass your own function. Let's have a quick look at how handshake extracts the clientId from the response.
+```scala
+    def handshake(handshake: Handshake = Handshake()) = {
+      cometd.sendText(handshake.toJson).checkResponse(fn = { message =>
+        val ack = message.fromJson[List[Ack]].get(0)
+        ack.clientId.get
+      }, matchers = cometDProtocolMatchers + "\"clientId\"", saveAs = Some("clientId"))
+    }
+``` 
+- If you would like to save the extraced value you jast pass the *savaAs* parameter and the resoult will be saved to the session using the given name.
+ 
 ## Processing pubished messages coming from the server ##
 If you would like to process published messages from the server you have to extends the *PubSubProcessorActor* class and create a new instance in the Gatling's actor system. *PubSubProcessorActor* subscribes for events published by the *CometDActor* via *GatlingActorSystem*. Later on you could use this reference to obtain information about the background processes.
 ```scala
