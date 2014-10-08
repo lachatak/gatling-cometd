@@ -17,6 +17,8 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
     .feed(idFeeder).exec(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
     .feed(idFeeder).exec(cometD("Disconnect").disconnect())
 ```
+### Version constraint ###
+Current version supports scala 2.10 and gatling 2.0
 
 ## Run ##
 - Clone the project
