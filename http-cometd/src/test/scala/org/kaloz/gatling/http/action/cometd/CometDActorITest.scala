@@ -23,8 +23,11 @@ with BeforeAndAfterAll
 with ImplicitSender
 with MockitoSugar {
 
-  override def afterAll() {
-    system.shutdown()
+  override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
+
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
+    GatlingActorSystem.shutdown
   }
 
   "CometDActor" should {
