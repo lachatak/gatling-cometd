@@ -29,7 +29,7 @@ Current version supports scala 2.10 and gatling 2.0
 
 If you would like to use the cometD extension in your own project you should add the following sbt dependency:
 ```scala
-    "org.kaloz.gatling" % "http-cometd" % "1.0.0-RC1" % "test"
+    "org.kaloz.gatling" % "http-cometd" % "1.0.0" % "test"
 ```
 
 ## Server side ##
