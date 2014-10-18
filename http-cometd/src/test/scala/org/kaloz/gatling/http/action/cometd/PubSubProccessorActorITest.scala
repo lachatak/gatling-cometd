@@ -52,6 +52,8 @@ with BeforeAndAfterAll {
 
   private trait scope {
 
+    io.gatling.ConfigHook.setUpForTest()
+
     import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
     val pubSubProccessorActor = TestActorRef(new PubSubProccessorActorStub)

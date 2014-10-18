@@ -41,12 +41,11 @@ with MockitoSugar {
 
   private trait scope {
 
-    val gatlingPropertyBuilder = new GatlingPropertiesBuilder
-    GatlingConfiguration.setUp(gatlingPropertyBuilder.build)
+    io.gatling.ConfigHook.setUpForTest()
+
     GatlingActorSystem.start
-    val runMessage = mock[RunMessage]
+    val runMessage = RunMessage("simulationClassName", "simulationId", io.gatling.core.util.TimeHelper.nowMillis, "Run")
     val replyTo = TestProbe()
-    when(runMessage.runDescription).thenReturn("Run")
     DataWriter.init(runMessage, Seq(), replyTo.ref)
 
     val wsTx = mock[WsTx]
@@ -64,9 +63,7 @@ with MockitoSugar {
     val cometDActor = TestActorRef(new CometDActor("name"))
     val listener = TestActorRef(new Listener)
     cometDActor ! OnOpen(wsTx, webSocket, 1000)
-
   }
-
 }
 
 class Listener extends Actor {
