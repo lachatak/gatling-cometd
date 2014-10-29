@@ -31,7 +31,7 @@ class CometDGatlingTest extends Simulation with Logging {
 
   val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
-  val users = 2
+  val users = 2000
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
