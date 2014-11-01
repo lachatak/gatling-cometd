@@ -10,20 +10,23 @@ import io.gatling.http.ahc.{HttpEngine, WsTx}
 import io.gatling.http.check.ws.WsCheck
 import io.gatling.http.config.HttpProtocol
 
+import scala.reflect.{Manifest, ClassTag}
+
 class CometDOpenAction(
                         requestName: Expression[String],
                         wsName: String,
                         request: Expression[Request],
                         check: Option[WsCheck],
                         val next: ActorRef,
-                        protocol: HttpProtocol) extends Interruptable {
+                        protocol: HttpProtocol,
+                        pubSubProcessorManifest: Option[Manifest[_]]) extends Interruptable {
 
   def execute(session: Session): Unit = {
 
     def open(tx: WsTx): Unit = {
       logger.info(s"Opening websocket '$wsName': Scenario '${session.scenarioName}', UserId #${session.userId}")
 
-      val wsActor = actor(context)(new CometDActor(wsName))
+      val wsActor = actor(context)(new CometDActor(wsName, pubSubProcessorManifest))
 
       HttpEngine.instance.startWebSocketTransaction(tx, wsActor)
     }

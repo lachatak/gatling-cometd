@@ -1,6 +1,7 @@
 package org.kaloz.gatling.http.action.cometd
 
 import akka.actor.{Actor, ActorLogging}
+import io.gatling.core.session._
 import org.kaloz.gatling.http.cometd.CometDMessages.Published
 import org.kaloz.gatling.regex.RegexUtil._
 
@@ -19,7 +20,7 @@ abstract class PubSubProcessorActor extends Actor with ActorLogging {
   override def preStart = {
     context.system.eventStream.subscribe(context.self, classOf[SubscribeMessage])
     context.system.eventStream.subscribe(context.self, classOf[UnsubscribeMessage])
-    context.system.eventStream.subscribe(context.self, classOf[Message])
+//    context.system.eventStream.subscribe(context.self, classOf[Message])
   }
 
   override def receive: Actor.Receive = pubSubReceive orElse messageReceive
@@ -30,7 +31,8 @@ abstract class PubSubProcessorActor extends Actor with ActorLogging {
     case UnsubscribeMessage(subscription) =>
       subscriptions = subscriptions - subscription
     case Message(message) =>
-
+      log.info(s"PubSub $message")
+      log.info(s"subscriptions $subscriptions")
       for {
         (regex, extractor) <- subscriptions.values
         matching <- regex.findFirstIn(message)
