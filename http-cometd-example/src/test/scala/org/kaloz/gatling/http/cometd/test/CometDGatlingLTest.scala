@@ -26,7 +26,7 @@ class CometDGatlingTest extends Simulation with Logging {
   case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
 
   implicit val requestTimeOut = 5 seconds
-  val users = 500
+  val users = 2
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)

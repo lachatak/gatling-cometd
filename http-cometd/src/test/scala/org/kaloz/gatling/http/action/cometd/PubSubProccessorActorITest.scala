@@ -15,41 +15,41 @@ with BeforeAndAfterAll {
     system.shutdown()
   }
 
-  "PubSubProccessorActor" should {
-    "be able to handle a new subscription" in new scope {
-
-      pubSubProccessorActor.underlyingActor.subscriptions should have size 1
-      pubSubProccessorActor.underlyingActor.subscriptions.get("/test").get._1.toString should be("(?=.*content).*")
-      pubSubProccessorActor.underlyingActor.subscriptions.get("/test").get._2 should be(extractor)
-    }
-
-    "be able to handle unsubscription" in new scope {
-
-      pubSubProccessorActor.underlyingActor.subscriptions should have size 1
-
-      system.eventStream.publish(UnsubscribeMessage("/test"))
-      pubSubProccessorActor.underlyingActor.subscriptions should have size 0
-    }
-
-    "be able to delegate extracted message" in new scope {
-
-      pubSubProccessorActor.underlyingActor.subscriptions should have size 1
-
-      system.eventStream.publish(Message(testJsonString))
-
-      pubSubProccessorActor.underlyingActor.received should be(Some(TestObject("value", Map("elem1" -> "value1", "elem2" -> 10))))
-    }
-
-    "not delegate extracted message if it hasn't got subscription" in new scope {
-
-      system.eventStream.publish(UnsubscribeMessage("/test"))
-      pubSubProccessorActor.underlyingActor.subscriptions should have size 0
-
-      system.eventStream.publish(Message(testJsonString))
-
-      pubSubProccessorActor.underlyingActor.received should be(None)
-    }
-  }
+//  "PubSubProccessorActor" should {
+//    "be able to handle a new subscription" in new scope {
+//
+//      pubSubProccessorActor.underlyingActor.subscriptions should have size 1
+//      pubSubProccessorActor.underlyingActor.subscriptions.get("/test").get._1.toString should be("(?=.*content).*")
+//      pubSubProccessorActor.underlyingActor.subscriptions.get("/test").get._2 should be(extractor)
+//    }
+//
+//    "be able to handle unsubscription" in new scope {
+//
+//      pubSubProccessorActor.underlyingActor.subscriptions should have size 1
+//
+//      system.eventStream.publish(UnsubscribeMessage("/test"))
+//      pubSubProccessorActor.underlyingActor.subscriptions should have size 0
+//    }
+//
+//    "be able to delegate extracted message" in new scope {
+//
+//      pubSubProccessorActor.underlyingActor.subscriptions should have size 1
+//
+//      system.eventStream.publish(Message(testJsonString))
+//
+//      pubSubProccessorActor.underlyingActor.received should be(Some(TestObject("value", Map("elem1" -> "value1", "elem2" -> 10))))
+//    }
+//
+//    "not delegate extracted message if it hasn't got subscription" in new scope {
+//
+//      system.eventStream.publish(UnsubscribeMessage("/test"))
+//      pubSubProccessorActor.underlyingActor.subscriptions should have size 0
+//
+//      system.eventStream.publish(Message(testJsonString))
+//
+//      pubSubProccessorActor.underlyingActor.received should be(None)
+//    }
+//  }
 
   private trait scope {
 
