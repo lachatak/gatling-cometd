@@ -16,6 +16,6 @@ class CometDOpenActionBuilder(requestName: Expression[String], wsName: String, r
   def build(next: ActorRef, protocols: Protocols): ActorRef = {
     val request = requestBuilder.build(httpProtocol(protocols))
     val protocol = httpProtocol(protocols)
-    actor(new CometDOpenAction(requestName, wsName, request, check, next, protocol, requestBuilder.pubSubProcessorManifest))
+    actor(new CometDOpenAction(requestName, wsName, request, check, next, protocol))
   }
 }

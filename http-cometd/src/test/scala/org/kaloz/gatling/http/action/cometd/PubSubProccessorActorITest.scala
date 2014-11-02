@@ -2,7 +2,6 @@ package org.kaloz.gatling.http.action.cometd
 
 import akka.actor._
 import akka.testkit.{TestActorRef, TestKit}
-import io.gatling.core.Predef._
 import org.kaloz.gatling.Fixture.{TestObject, testJsonString}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 

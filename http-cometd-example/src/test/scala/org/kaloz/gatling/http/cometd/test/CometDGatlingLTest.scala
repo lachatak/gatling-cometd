@@ -9,7 +9,7 @@ import io.gatling.app.Gatling
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
-import org.kaloz.gatling.http.action.cometd.{SubscribeMessage, PubSubProcessorActor, Store}
+import org.kaloz.gatling.http.action.cometd.{PubSubProcessorActor, Store}
 import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
 import org.kaloz.gatling.http.cometd.Predef._
 
@@ -26,7 +26,7 @@ class CometDGatlingTest extends Simulation with Logging {
   case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
 
   implicit val requestTimeOut = 5 seconds
-  val users = 500
+  val users = 2
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
@@ -44,7 +44,7 @@ class CometDGatlingTest extends Simulation with Logging {
 
   val scn = scenario("cometD")
     .feed(userIdFeeder)
-    .pause(1, 2)
+    .pause(1, 20)
 
     .exec(cometD("Open").open("/bayeux").pubSubProcessor[TimerCounterProcessor])
     .feed(idFeeder).exec(cometD("Handshake").handshake())
@@ -55,7 +55,7 @@ class CometDGatlingTest extends Simulation with Logging {
       .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
 
       .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
-      pause(2).exec(cometD("reconciliate").reconciliate)
+      exec(cometD("reconciliate").reconciliate).pause(2)
     }
       .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 

@@ -35,21 +35,19 @@ object Predef {
       cometd.sendText(connect.toJson).checkResponse(matchers = cometDProtocolMatchers)
     }
 
-    def subscribe(subscription: String, pubSubMatcher: Set[String] = Set.empty, pubSubExtractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
+    def subscribe(subscription: String, matchers: Set[String] = Set.empty, subscribeToPubSubProcessor: Boolean = true, extractor: String => Published = { m => m.fromJson[List[PublishedMap]].get(0)}) = {
       cometd.sendText(Subscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
-        val ack = message.fromJson[List[Ack]].get(0)
-        for {
-          s <- ack.subscription if (ack.successful && pubSubMatcher.nonEmpty)
-        } yield GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(s, pubSubMatcher, pubSubExtractor))
+        if (subscribeToPubSubProcessor) {
+          GatlingActorSystem.instance.eventStream.publish(SubscribeMessage(subscription, matchers, extractor))
+        }
+        message
       }, matchers = cometDProtocolMatchers)
     }
 
     def unsubscribe(subscription: String) = {
       cometd.sendText(Unsubscribe(subscription = subscription).toJson).checkResponse(fn = { message =>
-        val ack = message.fromJson[List[Ack]].get(0)
-        for{
-          s <- ack.subscription if (ack.successful)
-        } yield GatlingActorSystem.instance.eventStream.publish(UnsubscribeMessage(s))
+        GatlingActorSystem.instance.eventStream.publish(UnsubscribeMessage(subscription))
+        message
       }, matchers = cometDProtocolMatchers)
     }
 
@@ -67,7 +65,7 @@ object Predef {
   }
 
   implicit class CometDSendActionBuilder(val wsSendActionBuilder: WsSendActionBuilder)(implicit requestTimeOut: FiniteDuration) extends Logging {
-    def checkResponse(matchers: Set[String], fn: String => Any = { m => m}, saveAs: Option[String] = None) = {
+    def checkResponse(matchers: Set[String], fn: String => String = { m => m}, saveAs: Option[String] = None) = {
       val response = this.response(fn, matchers)
       wsSendActionBuilder.check(if (saveAs.isDefined)
         response.saveAs(saveAs.get)
@@ -75,7 +73,7 @@ object Predef {
         response)
     }
 
-    private def response(fn: String => Any, matchers: Set[String]): CheckBuilder[WsCheck, String, CharSequence, Any] with SaveAs[WsCheck, String, CharSequence, Any] = {
+    private def response(fn: String => String, matchers: Set[String]): CheckBuilder[WsCheck, String, CharSequence, String] with SaveAs[WsCheck, String, CharSequence, String] = {
       import org.kaloz.gatling.regex.RegexUtil._
       wsAwait.within(requestTimeOut).until(1).regex(stringToExpression(expression(matchers))).find.transform(fn).exists
     }

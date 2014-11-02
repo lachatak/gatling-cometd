@@ -4,7 +4,7 @@ object CometDMessages {
 
   trait Published
 
-  case class Ack(channel: String, clientId: Option[String], successful: Boolean, id: Option[String], subscription: Option[String])
+  case class Ack(channel: String, clientId: Option[String], successful: Boolean, id: Option[String])
 
   case class Handshake(channel: String = "/meta/handshake", version: String = "1.0", supportedConnectionTypes: List[String] = List("websocket", "long-polling", "callback-polling"), minimumVersion: Option[String] = Some("0.9"), id: Option[String] = Some("${id}"), advice: Option[Map[String, Any]] = Some(Map("timeout" -> 60000, "interval" -> 0)), ext: Option[Any] = None)
 
