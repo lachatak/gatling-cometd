@@ -3,16 +3,20 @@ package org.kaloz.gatling.http.cometd.test
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, Props}
+import akka.util.Timeout
 import com.typesafe.scalalogging.slf4j.Logging
 import io.gatling.app.Gatling
 import io.gatling.core.Predef._
+import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
-import org.kaloz.gatling.http.action.cometd.{PubSubProcessorActor, Store}
+import org.kaloz.gatling.http.action.cometd.PubSubProcessorActor
 import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
 import org.kaloz.gatling.http.cometd.Predef._
+import org.kaloz.gatling.http.cometd.test.Processor.GetCounter
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object CometDGatlingTest extends App {
@@ -25,8 +29,9 @@ class CometDGatlingTest extends Simulation with Logging {
 
   case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
 
+  val processor = GatlingActorSystem.instance.actorOf(Processor.props, name = "Processor")
   implicit val requestTimeOut = 5 seconds
-  val users = 2
+  val users = 200
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
@@ -38,26 +43,32 @@ class CometDGatlingTest extends Simulation with Logging {
     .disableFollowRedirect
     .disableWarmUp
 
-  val userIdFeeder = Iterator.continually(Map("userId" -> userIdGenerator.getAndIncrement()))
+  val userIdFeeder = Iterator.continually(Map("userId" -> userIdGenerator.getAndIncrement))
   val idFeeder = Iterator.continually(Map("id" -> idGenerator.getAndIncrement))
   val uuidFeeder = Iterator.continually(Map("correlationId" -> UUID.randomUUID.toString))
 
   val scn = scenario("cometD")
     .feed(userIdFeeder)
-    .pause(1, 20)
 
-    .exec(cometD("Open").open("/bayeux").pubSubProcessor[TimerCounterProcessor])
+    .exec(cometD("Open").open("/bayeux"))
     .feed(idFeeder).exec(cometD("Handshake").handshake())
     .doIf(session => session.contains("clientId")) {
     feed(idFeeder).exec(cometD("Connect").connect())
 
       .feed(idFeeder).exec(cometD("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
-      .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
+      .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}", subscribeToPubSubProcessor = false))
 
-      .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
-      exec(cometD("reconciliate").reconciliate).pause(2)
+      .asLongAs(session => {
+      implicit val timeout = Timeout(5 seconds)
+      import akka.pattern.ask
+
+      val counterFuture = (processor ? GetCounter).mapTo[Long]
+      val counter = Await.result(counterFuture, timeout.duration)
+      counter < 5
+    }) {
+      feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+        .pause(2, 4)
     }
-      .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 
       .feed(idFeeder).exec(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
       .feed(idFeeder).exec(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
@@ -70,13 +81,21 @@ class CometDGatlingTest extends Simulation with Logging {
     )
 }
 
-class TimerCounterProcessor(sessionHandler: ActorRef) extends PubSubProcessorActor {
+class Processor extends PubSubProcessorActor {
 
   val counter = new AtomicLong(0)
 
   def messageReceive: Actor.Receive = {
     case PublishedMap(channel, data) =>
-//      log.info(s"Process $data")
-      sessionHandler ! Store(Map("counter" -> counter.getAndIncrement))
+      counter.getAndIncrement
+    case GetCounter =>
+      sender ! counter.get
   }
+}
+
+object Processor {
+  def props: Props = Props[Processor]
+
+  case object GetCounter
+
 }
