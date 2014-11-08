@@ -23,9 +23,7 @@ abstract class PubSubProcessorActor extends Actor with ActorLogging {
 //    context.system.eventStream.subscribe(context.self, classOf[Message])
   }
 
-  override def receive: Actor.Receive = pubSubReceive orElse messageReceive
-
-  def pubSubReceive: Actor.Receive = {
+  override def receive: Actor.Receive = {
     case SubscribeMessage(subscription, matchers, extractor) =>
       subscriptions = subscriptions + (subscription ->(expression(matchers).r, extractor))
     case UnsubscribeMessage(subscription) =>
@@ -37,8 +35,8 @@ abstract class PubSubProcessorActor extends Actor with ActorLogging {
         (regex, extractor) <- subscriptions.values
         matching <- regex.findFirstIn(message)
         result = extractor(matching)
-      } yield self ! result
+      } yield messageReceive(result)
   }
 
-  def messageReceive: Actor.Receive
+  def messageReceive:PartialFunction[Published, Unit]
 }

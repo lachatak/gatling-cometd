@@ -12,7 +12,7 @@ import io.gatling.core.validation.Success
 import io.gatling.http.action.ws._
 import io.gatling.http.ahc.{HttpEngine, WsTx}
 import io.gatling.http.check.ws.{ExpectedCount, ExpectedRange, UntilCount, WsCheck}
-import org.kaloz.gatling.regex.RegexUtil._
+import org.kaloz.gatling.http.cometd.CometDMessages.Published
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -25,28 +25,28 @@ class SessionHandler extends Actor with ActorLogging {
 
   def receive = handleSession()
 
-  def handleSession(data: Map[String, Any] = Map.empty): Receive = {
+  def handleSession(storedData: Map[String, Any] = Map.empty): Receive = {
     case Forward(next, session) =>
-//      log.info(s"Forward $next")
-//      log.info(s"Stored $data")
-//      log.info(s"Session old $session")
-      val newSession = session.setAll(data)
+      //      log.info(s"Forward $next")
+      //      log.info(s"Stored $data")
+      //      log.info(s"Session old $session")
+      val newSession = session.setAll(storedData)
       log.info(s"Session new $newSession")
       next ! newSession
       context become handleSession()
     case Store(data) =>
-//      log.info(s"Store $data")
-      context become handleSession(data)
+      //      log.info(s"Store $data")
+      context become handleSession(storedData ++ data)
   }
 }
 
 class DefaultPubSubProcessor extends PubSubProcessorActor {
 
-  override def pubSubReceive: Actor.Receive = {
+  override def receive: Actor.Receive = {
     case _ =>
   }
 
-  def messageReceive: Actor.Receive = {
+  def messageReceive = {
     case _ =>
   }
 }

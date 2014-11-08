@@ -3,14 +3,14 @@ package org.kaloz.gatling.http.cometd.test
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import com.typesafe.scalalogging.slf4j.Logging
 import io.gatling.app.Gatling
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
-import org.kaloz.gatling.http.action.cometd.{SubscribeMessage, PubSubProcessorActor, Store}
-import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
+import org.kaloz.gatling.http.action.cometd.{PubSubProcessorActor, Store}
+import org.kaloz.gatling.http.cometd.CometDMessages.{Published, PublishedMap}
 import org.kaloz.gatling.http.cometd.Predef._
 
 import scala.concurrent.duration._
@@ -26,7 +26,7 @@ class CometDGatlingTest extends Simulation with Logging {
   case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
 
   implicit val requestTimeOut = 5 seconds
-  val users = 2
+  val users = 500
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
@@ -74,9 +74,9 @@ class TimerCounterProcessor(sessionHandler: ActorRef) extends PubSubProcessorAct
 
   val counter = new AtomicLong(0)
 
-  def messageReceive: Actor.Receive = {
+  override def messageReceive = {
     case PublishedMap(channel, data) =>
-//      log.info(s"Process $data")
+      log.info(s"Process $data")
       sessionHandler ! Store(Map("counter" -> counter.getAndIncrement))
   }
 }
