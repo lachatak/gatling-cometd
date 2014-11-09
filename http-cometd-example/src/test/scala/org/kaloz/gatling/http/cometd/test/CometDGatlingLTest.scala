@@ -1,7 +1,7 @@
 package org.kaloz.gatling.http.cometd.test
 
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import java.util.{Date, UUID}
 
 import akka.actor.ActorRef
 import com.typesafe.scalalogging.slf4j.Logging
@@ -24,10 +24,10 @@ object CometDGatlingTest extends App {
 
 class CometDGatlingTest extends Simulation with Logging {
 
-  case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
+  case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}", timestamp: Date = new Date)
 
   implicit val requestTimeOut = 5 seconds
-  val users = 500
+  val users = 2
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
@@ -56,9 +56,12 @@ class CometDGatlingTest extends Simulation with Logging {
       .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
 
       .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
-      pause(2).exec(cometD("reconciliate").reconciliate)
+      pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
     }
-      .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 8) {
+      pause(1, 2).exec(cometD("reconciliate").reconciliate)
+    }
+      .pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 
       .feed(idFeeder).exec(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
       .feed(idFeeder).exec(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
@@ -66,7 +69,7 @@ class CometDGatlingTest extends Simulation with Logging {
   }
   //    .exec(cometD("Close cometD").close)
 
-  setUp(scn.inject(rampUsers(users) over 10).protocols(httpConf))
+  setUp(scn.inject(rampUsers(users) over 30).protocols(httpConf))
     .assertions(global.successfulRequests.percent.is(100)
     )
 }

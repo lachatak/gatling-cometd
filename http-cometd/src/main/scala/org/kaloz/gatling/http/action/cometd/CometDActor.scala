@@ -1,5 +1,7 @@
 package org.kaloz.gatling.http.action.cometd
 
+import java.util.Date
+
 import akka.actor.{ActorRef, Props}
 import com.ning.http.client.websocket.WebSocket
 import io.gatling.core.akka.BaseActor
@@ -17,6 +19,8 @@ import org.kaloz.gatling.http.action.cometd.SessionHandler.Forward
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
+
+case class CheckTimeout2(check: WsCheck, message:Any, date:Long)
 
 class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = None) extends BaseActor with DataWriterClient {
 
@@ -40,8 +44,9 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
     logger.debug(s"setCheck blocking=${check.blocking} timeout=${check.timeout}")
 
     // schedule timeout
+    val startTime = new Date().getTime
     scheduler.scheduleOnce(check.timeout) {
-      self ! CheckTimeout(check)
+      self ! CheckTimeout2(check, session.attributes.getOrElse("message", "Check NONE"), startTime)
     }
 
     val newTx = failPendingCheck(tx, "Check didn't succeed by the time a new one was set up")
@@ -179,7 +184,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
         check match {
           case Some(c) =>
             // do this immediately instead of self sending a Listen message so that other messages don't get a chance to be handled before
-            setCheck(tx, webSocket, requestName + " Check", c, next, session)
+            setCheck(tx, webSocket, requestName + " Check", c, next, session.set("message", message))
           case _ => reconciliate(next, session)
         }
 
@@ -204,15 +209,21 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
         context.become(openState(webSocket, newTx))
         sessionHandler ! Forward(next, newTx.session)
 
-      case CheckTimeout(check) =>
+      case CheckTimeout2(check, message, startTime) =>
         logger.debug(s"Check on WebSocket '$wsName' timed out")
 
+        val checkTime = new Date().getTime
+//        logger.debug(s"Timeout message ${checkTime-startTime}: $message")
+//        logger.debug(s"Tx      message ${checkTime-startTime}: ${tx.session.attributes.getOrElse("message", "TX NONE")}")
+
         tx.check match {
-          case Some(`check`) =>
+//          case Some(`check`) =>
+          case Some(`check`) if(message == tx.session.attributes.getOrElse("message", "TX NONE")) =>
             check.expectation match {
               case ExpectedCount(count) if count == tx.pendingCheckSuccesses.size => succeedPendingCheck(tx.pendingCheckSuccesses)
               case ExpectedRange(range) if range.contains(tx.pendingCheckSuccesses.size) => succeedPendingCheck(tx.pendingCheckSuccesses)
               case _ =>
+                logger.debug(s"Booom ${checkTime-startTime}: $message")
                 val newTx = failPendingCheck(tx, "Check failed: Timeout")
                 context.become(openState(webSocket, newTx))
 
