@@ -16,7 +16,6 @@ class CometDOpenAction(
                         requestName: Expression[String],
                         wsName: String,
                         request: Expression[Request],
-                        check: Option[WsCheck],
                         val next: ActorRef,
                         protocol: HttpProtocol,
                         pubSubProcessorManifest: Option[Manifest[_]]) extends Interruptable {
@@ -26,14 +25,14 @@ class CometDOpenAction(
     def open(tx: WsTx): Unit = {
       logger.info(s"Opening websocket '$wsName': Scenario '${session.scenarioName}', UserId #${session.userId}")
 
-      val wsActor = actor(context)(new CometDActor(wsName, pubSubProcessorManifest))
+      val cometDActor = actor(context)(new CometDActor(wsName, pubSubProcessorManifest))
 
-      HttpEngine.instance.startWebSocketTransaction(tx, wsActor)
+      HttpEngine.instance.startWebSocketTransaction(tx, cometDActor)
     }
 
     for {
       requestName <- requestName(session)
       request <- request(session)
-    } yield open(WsTx(session, request, requestName, protocol, next, nowMillis, check = check))
+    } yield open(WsTx(session, request, requestName, protocol, next, nowMillis))
   }
 }

@@ -9,7 +9,7 @@ import io.gatling.app.Gatling
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
-import org.kaloz.gatling.http.action.cometd.{PubSubProcessorActor, Store}
+import org.kaloz.gatling.http.action.cometd.{PushProcessorActor, Store}
 import org.kaloz.gatling.http.cometd.CometDMessages.{Published, PublishedMap}
 import org.kaloz.gatling.http.cometd.Predef._
 
@@ -46,18 +46,18 @@ class CometDGatlingTest extends Simulation with Logging {
     .feed(userIdFeeder)
     .pause(1, 2)
 
-    .exec(cometD("Open").open("/bayeux").pubSubProcessor[TimerCounterProcessor])
+    .exec(cometD("Open").open("/bayeux").pushProcessor[TimerCounterProcessor])
     .feed(idFeeder).exec(cometD("Handshake").handshake())
     .doIf(session => session.contains("clientId")) {
     feed(idFeeder).exec(cometD("Connect").connect())
 
-      .feed(idFeeder).exec(cometD("Subscribe Timer").subscribe("/timer/${userId}", Set("TriggeredTime")))
+      .feed(idFeeder).exec(cometD("Subscribe Timer").subscribe("/timer/${userId}").acceptPushContains(Set("TriggeredTime")))
       .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
 
-      .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
+      .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 2) {
       pause(2).exec(cometD("reconciliate").reconciliate)
     }
-      .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).checkResponse(matchers = Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 
       .feed(idFeeder).exec(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
       .feed(idFeeder).exec(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
@@ -70,7 +70,7 @@ class CometDGatlingTest extends Simulation with Logging {
     )
 }
 
-class TimerCounterProcessor(sessionHandler: ActorRef) extends PubSubProcessorActor {
+class TimerCounterProcessor(sessionHandler: ActorRef) extends PushProcessorActor {
 
   val counter = new AtomicLong(0)
 

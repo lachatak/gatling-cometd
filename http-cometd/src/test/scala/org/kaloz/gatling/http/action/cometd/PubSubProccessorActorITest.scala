@@ -57,13 +57,13 @@ with BeforeAndAfterAll {
 
     import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
-    val pubSubProccessorActor = TestActorRef(new PubSubProccessorActorStub)
+    val pubSubProccessorActor = TestActorRef(new PushProccessorActorStub)
 
     var extractor = (m: String) => m.fromJson[TestObject]
     system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
   }
 
-  class PubSubProccessorActorStub extends PubSubProcessorActor {
+  class PushProccessorActorStub extends PushProcessorActor {
 
     var received: Option[TestObject] = None
 

@@ -12,7 +12,6 @@ import io.gatling.core.validation.Success
 import io.gatling.http.action.ws._
 import io.gatling.http.ahc.{HttpEngine, WsTx}
 import io.gatling.http.check.ws.{ExpectedCount, ExpectedRange, UntilCount, WsCheck}
-import org.kaloz.gatling.http.cometd.CometDMessages.Published
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -27,20 +26,20 @@ class SessionHandler extends Actor with ActorLogging {
 
   def handleSession(storedData: Map[String, Any] = Map.empty): Receive = {
     case Forward(next, session) =>
-      //      log.info(s"Forward $next")
-      //      log.info(s"Stored $data")
-      //      log.info(s"Session old $session")
+      log.info(s"Forward $next")
+      log.info(s"Stored $storedData")
+      log.info(s"Session old $session")
       val newSession = session.setAll(storedData)
       log.info(s"Session new $newSession")
       next ! newSession
       context become handleSession()
     case Store(data) =>
-      //      log.info(s"Store $data")
+      log.info(s"Store $data")
       context become handleSession(storedData ++ data)
   }
 }
 
-class DefaultPubSubProcessor extends PubSubProcessorActor {
+class DefaultPushProcessor extends PushProcessorActor {
 
   override def receive: Actor.Receive = {
     case _ =>
@@ -51,10 +50,10 @@ class DefaultPubSubProcessor extends PubSubProcessorActor {
   }
 }
 
-class CometDActor(wsName: String, pubSubProcessorManifest: Option[ClassTag[_]] = None) extends BaseActor with DataWriterClient {
+class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = None) extends BaseActor with DataWriterClient {
 
   val sessionHandler = system.actorOf(Props[SessionHandler])
-  val pubSubProcessor = system.actorOf(Props.create(pubSubProcessorManifest.getOrElse(Manifest.classType(classOf[DefaultPubSubProcessor])).runtimeClass, sessionHandler))
+  val pushProcessor = system.actorOf(Props.create(pushProcessorManifest.getOrElse(Manifest.classType(classOf[DefaultPushProcessor])).runtimeClass, sessionHandler))
 
   def receive = initialState
 
@@ -91,7 +90,7 @@ class CometDActor(wsName: String, pubSubProcessorManifest: Option[ClassTag[_]] =
     case OnOpen(tx, webSocket, end) =>
       import tx._
       logger.debug(s"Websocket '$wsName' open")
-      val newSession = session.set(wsName, self)
+      val newSession = session.set(wsName, self).set("pushProcessor", pushProcessor)
       val newTx = tx.copy(session = newSession)
 
       check match {
@@ -261,7 +260,7 @@ class CometDActor(wsName: String, pubSubProcessorManifest: Option[ClassTag[_]] =
       case OnTextMessage(message, time) =>
         logger.debug(s"Received text message on websocket '$wsName':$message")
 
-        pubSubProcessor ! Message(message)
+        pushProcessor ! Message(message)
 
         implicit val cache = mutable.Map.empty[Any, Any]
 

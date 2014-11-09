@@ -3,39 +3,38 @@ package org.kaloz.gatling.http.request.builder.cometd
 import io.gatling.core.session._
 import io.gatling.http.action.ws._
 import io.gatling.http.request.builder.CommonAttributes
-import io.gatling.http.request.builder.ws.Ws
+import org.kaloz.gatling.http.action.cometd._
+import org.kaloz.gatling.http.cometd.CometDMessages._
 
-/**
- * @param requestName The name of this request
- * @param wsName The name of the session attribute used to store the websocket
- */
-class CometD(val requestName: Expression[String], val wsName: String = Ws.DefaultWebSocketName) {
+import scala.concurrent.duration.FiniteDuration
 
-  def wsName(wsName: String) = new CometD(requestName, wsName)
+object CometD {
 
-  /**
-   * Opens a cometD connection using web socket and stores it in the session.
-   *
-   * @param url The socket URL
-   *
-   */
-  def open(url: Expression[String]) = new CometDOpenRequestBuilder(CommonAttributes(requestName, "GET", Left(url)), wsName)
+  val DefaultCometDName = SessionPrivateAttributes.PrivateAttributePrefix + "http.cometd"
+}
 
-  /**
-   * Sends a text message on the given websocket.
-   *
-   * @param text The message
-   */
-  def sendText(text: Expression[String]) = new WsSendActionBuilder(requestName, wsName, text.map(TextMessage))
+class CometD(val requestName: Expression[String], val cometDName: String = CometD.DefaultCometDName)(implicit requestTimeOut: FiniteDuration) {
 
-  /**
-   * Reconciliate the main state with the one of the websocket flow.
-   */
-  def reconciliate = new WsReconciliateActionBuilder(requestName, wsName)
+  def cometDName(cometDName: String) = new CometD(requestName, cometDName)
 
-  /**
-   * Closes a websocket.
-   */
-  def close = new WsCloseActionBuilder(requestName, wsName)
+  def open(url: Expression[String]) = new CometDOpenRequestBuilder(CommonAttributes(requestName, "GET", Left(url)), cometDName)
+
+  def handshake(handshake: Handshake = Handshake()) = new CometDHandshakeActionBuilder(requestName, cometDName, handshake)
+
+  def connect(connect: Connect = Connect()) = new CometDConnectActionBuilder(requestName, cometDName, connect)
+
+  def subscribe(subscription: String) = new CometDSubscribeActionBuilderStep1(requestName, cometDName, Subscribe(subscription = subscription))
+
+  def unsubscribe(subscription: String) = new CometDUnsubscribeActionBuilder(requestName, cometDName, Unsubscribe(subscription = subscription))
+
+  def publish(channel: String, data: Any) = new CometDPublishActionBuilderStep1(requestName, cometDName, Publish(channel, data))
+
+  def sendCommand(channel: String, data: Any) = publish(channel, data)
+
+  def disconnect(disconnect: Disconnect = Disconnect()) = new CometDDisconnectActionBuilder(requestName, cometDName, disconnect)
+
+  def reconciliate = new WsReconciliateActionBuilder(requestName, cometDName)
+
+  def close = new WsCloseActionBuilder(requestName, cometDName)
 
 }
