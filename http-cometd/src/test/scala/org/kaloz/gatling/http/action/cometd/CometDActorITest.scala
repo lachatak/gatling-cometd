@@ -61,19 +61,19 @@ with MockitoSugar {
     when(session.set(anyString(), isA(classOf[ActorRef]))).thenReturn(session)
 
     val cometDActor = TestActorRef(new CometDActor("name"))
-    val listener = TestActorRef(new Listener)
+//    val listener = TestActorRef(new Listener)
     cometDActor ! OnOpen(wsTx, webSocket, 1000)
   }
 }
 
-class Listener extends Actor {
-  override def preStart = {
-    context.system.eventStream.subscribe(context.self, classOf[Message])
-  }
-
-  var message: Option[String] = None
-
-  override def receive: Receive = {
-    case Message(m) => message = Some(m)
-  }
-}
+//class Listener extends Actor {
+//  override def preStart = {
+//    context.system.eventStream.subscribe(context.self, classOf[Message])
+//  }
+//
+//  var message: Option[String] = None
+//
+//  override def receive: Receive = {
+//    case Message(m) => message = Some(m)
+//  }
+//}

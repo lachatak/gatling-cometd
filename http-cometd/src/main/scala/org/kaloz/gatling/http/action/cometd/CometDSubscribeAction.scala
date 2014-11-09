@@ -20,6 +20,7 @@ import io.gatling.core.session.{Expression, Session}
 import io.gatling.core.validation.Validation
 import io.gatling.http.action.RequestAction
 import io.gatling.http.action.ws.{Send, WsAction, WsMessage}
+import org.kaloz.gatling.http.action.cometd.PushProcessorActor.SubscribeMessage
 import org.kaloz.gatling.http.cometd.CometDMessages.{Ack, Published}
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
@@ -36,7 +37,7 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
       for {
         s <- ack.subscription if (ack.successful && matchers.nonEmpty)
         e <- extractor
-        actor <- session.attributes.get("pushProcessor")
+        actor <- session.attributes.get(PushProcessorActor.PushProcessorName)
         actorRef = actor.asInstanceOf[ActorRef]
       } yield actorRef ! SubscribeMessage(s, matchers, e)
     }), next, session)

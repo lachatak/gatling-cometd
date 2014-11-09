@@ -1,6 +1,6 @@
 package org.kaloz.gatling.http.action.cometd
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{ActorRef, Props}
 import com.ning.http.client.websocket.WebSocket
 import io.gatling.core.akka.BaseActor
 import io.gatling.core.check.CheckResult
@@ -12,48 +12,16 @@ import io.gatling.core.validation.Success
 import io.gatling.http.action.ws._
 import io.gatling.http.ahc.{HttpEngine, WsTx}
 import io.gatling.http.check.ws.{ExpectedCount, ExpectedRange, UntilCount, WsCheck}
+import org.kaloz.gatling.http.action.cometd.PushProcessorActor.Message
+import org.kaloz.gatling.http.action.cometd.SessionHandler.Forward
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-case class Store(data: Map[String, Any])
-
-case class Forward(next: ActorRef, session: Session)
-
-class SessionHandler extends Actor with ActorLogging {
-
-  def receive = handleSession()
-
-  def handleSession(storedData: Map[String, Any] = Map.empty): Receive = {
-    case Forward(next, session) =>
-      log.info(s"Forward $next")
-      log.info(s"Stored $storedData")
-      log.info(s"Session old $session")
-      val newSession = session.setAll(storedData)
-      log.info(s"Session new $newSession")
-      next ! newSession
-      context become handleSession()
-    case Store(data) =>
-      log.info(s"Store $data")
-      context become handleSession(storedData ++ data)
-  }
-}
-
-class DefaultPushProcessor extends PushProcessorActor {
-
-  override def receive: Actor.Receive = {
-    case _ =>
-  }
-
-  def messageReceive = {
-    case _ =>
-  }
-}
-
 class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = None) extends BaseActor with DataWriterClient {
 
   val sessionHandler = system.actorOf(Props[SessionHandler])
-  val pushProcessor = system.actorOf(Props.create(pushProcessorManifest.getOrElse(Manifest.classType(classOf[DefaultPushProcessor])).runtimeClass, sessionHandler))
+  val pushProcessor = system.actorOf(PushProcessorActor.props(pushProcessorManifest, sessionHandler))
 
   def receive = initialState
 
@@ -90,7 +58,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
     case OnOpen(tx, webSocket, end) =>
       import tx._
       logger.debug(s"Websocket '$wsName' open")
-      val newSession = session.set(wsName, self).set("pushProcessor", pushProcessor)
+      val newSession = session.set(wsName, self).set(PushProcessorActor.PushProcessorName, pushProcessor)
       val newTx = tx.copy(session = newSession)
 
       check match {

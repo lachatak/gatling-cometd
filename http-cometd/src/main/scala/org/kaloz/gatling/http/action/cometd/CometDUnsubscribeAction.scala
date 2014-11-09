@@ -20,6 +20,7 @@ import io.gatling.core.session.{Expression, Session}
 import io.gatling.core.validation.Validation
 import io.gatling.http.action.RequestAction
 import io.gatling.http.action.ws.{Send, WsAction, WsMessage}
+import org.kaloz.gatling.http.action.cometd.PushProcessorActor.UnsubscribeMessage
 import org.kaloz.gatling.http.cometd.CometDMessages.Ack
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
@@ -35,7 +36,7 @@ class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: S
       val ack = message.fromJson[List[Ack]].head
       for {
         s <- ack.subscription if (ack.successful)
-        actor <- session.attributes.get("pushProcessor")
+        actor <- session.attributes.get(PushProcessorActor.PushProcessorName)
         actorRef = actor.asInstanceOf[ActorRef]
       } yield actorRef ! UnsubscribeMessage(s)
     }), next, session)

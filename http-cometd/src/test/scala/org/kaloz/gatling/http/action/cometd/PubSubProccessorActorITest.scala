@@ -60,7 +60,7 @@ with BeforeAndAfterAll {
     val pubSubProccessorActor = TestActorRef(new PushProccessorActorStub)
 
     var extractor = (m: String) => m.fromJson[TestObject]
-    system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
+//    system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
   }
 
   class PushProccessorActorStub extends PushProcessorActor {
