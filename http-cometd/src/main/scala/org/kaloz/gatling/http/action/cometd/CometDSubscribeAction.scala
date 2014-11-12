@@ -41,6 +41,6 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
         actorRef = actor.asInstanceOf[ActorRef]
       } yield actorRef ! SubscribeMessage(s, matchers, e)
       message
-    }).get.build), next, session)
+    }).build), next, session)
   }
 }

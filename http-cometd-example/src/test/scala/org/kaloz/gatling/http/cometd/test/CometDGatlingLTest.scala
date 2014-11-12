@@ -17,9 +17,13 @@ import org.kaloz.gatling.http.cometd.Predef._
 import scala.concurrent.duration._
 
 object CometDGatlingTest extends App {
-  val gatlingPropertyBuilder = new GatlingPropertiesBuilder
-  gatlingPropertyBuilder.simulationClass(classOf[CometDGatlingTest].getName)
-  new Gatling(gatlingPropertyBuilder.build, None).start
+  val props = new GatlingPropertiesBuilder
+  props.dataDirectory(IDEPathHelper.dataDirectory.toString)
+  props.resultsDirectory(IDEPathHelper.resultsDirectory.toString)
+  props.requestBodiesDirectory(IDEPathHelper.requestBodiesDirectory.toString)
+  props.binariesDirectory(IDEPathHelper.mavenBinariesDirectory.toString)
+  props.mute()
+  new Gatling(props.build, None).start
 }
 
 class CometDGatlingTest extends Simulation with StrictLogging {
@@ -80,7 +84,6 @@ class TimerCounterProcessor(sessionHandler: ActorRef) extends PushProcessorActor
 
   override def messageReceive = {
     case PublishedMap(channel, data) =>
-      //      log.info(s"Process $data")
       sessionHandler ! Store(Map("counter" -> counter.getAndIncrement))
   }
 }

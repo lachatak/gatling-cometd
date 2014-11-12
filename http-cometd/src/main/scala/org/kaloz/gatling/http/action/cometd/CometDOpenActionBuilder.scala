@@ -30,20 +30,20 @@ import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
 class CometDHandshakeActionBuilder(requestName: Expression[String], cometDName: String, handshake: Handshake)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
 
-  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, handshake, buildCheckResponse(cometDProtocolMatchers + "\"clientId\"", { message =>
+  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, handshake, Some(buildCheckResponse(cometDProtocolMatchers + "\"clientId\"", { message =>
     val ack = message.fromJson[List[Ack]].head
     ack.clientId.get
-  }, Some("clientId")), next))
+  }, Some("clientId"))), next))
 }
 
 class CometDConnectActionBuilder(requestName: Expression[String], cometDName: String, connect: Connect)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
 
-  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, connect, buildCheckResponse(cometDProtocolMatchers), next))
+  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, connect, Some(buildCheckResponse(cometDProtocolMatchers)), next))
 }
 
 class CometDDisconnectActionBuilder(requestName: Expression[String], cometDName: String, disconnect: Disconnect)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
 
-  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, disconnect, buildCheckResponse(cometDProtocolMatchers), next))
+  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, disconnect, Some(buildCheckResponse(cometDProtocolMatchers)), next))
 }
 
 class CometDPublishActionBuilderStep1(requestName: Expression[String], cometDName: String, publish: Publish)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder {
@@ -59,7 +59,7 @@ class CometDPublishActionBuilderStep2(requestName: Expression[String], cometDNam
 
   def saveAs(saveAs: Option[String]) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
 
-  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, publish, buildCheckResponse(matchers, fn, saveAs), next))
+  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, publish, Some(buildCheckResponse(matchers, fn, saveAs)), next))
 }
 
 class CometDSubscribeActionBuilderStep1(requestName: Expression[String], cometDName: String, subscribe: Subscribe)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
@@ -85,12 +85,14 @@ trait CometDCheckBuilder {
 
   val cometDProtocolMatchers = Set("\"id\":\"${id}\"", "\"successful\":true")
 
-  protected def buildCheckResponse(matchers: Set[String], transformer: String => String = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) = {
+  val Identity: String => String = identity[String]
+
+  protected def buildCheckResponse(matchers: Set[String], transformer: String => String = Identity, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) = {
     val response = this.response(transformer, matchers)
-    Some(if (saveAs.isDefined)
+    if (saveAs.isDefined)
       response.saveAs(saveAs.get)
     else
-      response)
+      response
   }
 
   protected def response(fn: String => String, matchers: Set[String])(implicit requestTimeOut: FiniteDuration): WsCheckBuilder with SaveAs[WsCheck, String, _, String] = {

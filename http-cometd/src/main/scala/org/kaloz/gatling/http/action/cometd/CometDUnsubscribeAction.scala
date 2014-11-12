@@ -40,6 +40,6 @@ class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: S
         actorRef = actor.asInstanceOf[ActorRef]
       } yield actorRef ! UnsubscribeMessage(s)
       message
-    }).get.build), next, session)
+    }).build), next, session)
   }
 }
