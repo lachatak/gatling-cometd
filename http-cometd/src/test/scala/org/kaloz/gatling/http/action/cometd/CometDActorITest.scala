@@ -2,11 +2,10 @@ package org.kaloz.gatling.http.action.cometd
 
 import java.util.Date
 
-import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import com.ning.http.client.websocket.WebSocket
 import io.gatling.core.akka.GatlingActorSystem
-import io.gatling.core.config.{GatlingConfiguration, GatlingPropertiesBuilder}
 import io.gatling.core.result.writer.{DataWriter, RunMessage}
 import io.gatling.core.session.Session
 import io.gatling.http.action.ws.{OnOpen, OnTextMessage}
@@ -46,7 +45,7 @@ with MockitoSugar {
     GatlingActorSystem.start
     val runMessage = RunMessage("simulationClassName", "simulationId", io.gatling.core.util.TimeHelper.nowMillis, "Run")
     val replyTo = TestProbe()
-    DataWriter.init(runMessage, Seq(), replyTo.ref)
+    DataWriter.init(Seq(), runMessage, Seq(), replyTo.ref)
 
     val wsTx = mock[WsTx]
     val session = mock[Session]
@@ -61,9 +60,10 @@ with MockitoSugar {
     when(session.set(anyString(), isA(classOf[ActorRef]))).thenReturn(session)
 
     val cometDActor = TestActorRef(new CometDActor("name"))
-//    val listener = TestActorRef(new Listener)
+    //    val listener = TestActorRef(new Listener)
     cometDActor ! OnOpen(wsTx, webSocket, 1000)
   }
+
 }
 
 //class Listener extends Actor {

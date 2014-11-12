@@ -3,13 +3,13 @@ package org.kaloz.gatling.http.action.cometd
 import akka.actor.ActorDSL._
 import akka.actor.ActorRef
 import io.gatling.core.Predef._
-import io.gatling.core.check.{CheckBuilder, SaveAs}
+import io.gatling.core.check.SaveAs
 import io.gatling.core.config.Protocols
 import io.gatling.core.session._
 import io.gatling.http.Predef._
 import io.gatling.http.action.HttpActionBuilder
 import io.gatling.http.action.ws._
-import io.gatling.http.check.ws.WsCheck
+import io.gatling.http.check.ws.{WsCheck, WsCheckBuilder}
 import org.kaloz.gatling.http.cometd.CometDMessages._
 import org.kaloz.gatling.http.request.builder.cometd.CometDOpenRequestBuilder
 
@@ -53,7 +53,7 @@ class CometDPublishActionBuilderStep1(requestName: Expression[String], cometDNam
   def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, publish, None, next))
 }
 
-class CometDPublishActionBuilderStep2(requestName: Expression[String], cometDName: String, publish: Publish, matchers: Set[String], fn: String => Any = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
+class CometDPublishActionBuilderStep2(requestName: Expression[String], cometDName: String, publish: Publish, matchers: Set[String], fn: String => String = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
 
   def transformer(transformer: String => Any) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
 
@@ -85,15 +85,15 @@ trait CometDCheckBuilder {
 
   val cometDProtocolMatchers = Set("\"id\":\"${id}\"", "\"successful\":true")
 
-  protected def buildCheckResponse(matchers: Set[String], transformer: String => Any = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) = {
+  protected def buildCheckResponse(matchers: Set[String], transformer: String => String = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) = {
     val response = this.response(transformer, matchers)
     Some(if (saveAs.isDefined)
-      response.saveAs(saveAs.get).build
+      response.saveAs(saveAs.get)
     else
-      response.build)
+      response)
   }
 
-  protected def response(fn: String => Any, matchers: Set[String])(implicit requestTimeOut: FiniteDuration): CheckBuilder[WsCheck, String, CharSequence, Any] with SaveAs[WsCheck, String, CharSequence, Any] = {
+  protected def response(fn: String => String, matchers: Set[String])(implicit requestTimeOut: FiniteDuration): WsCheckBuilder with SaveAs[WsCheck, String, _, String] = {
     import org.kaloz.gatling.regex.RegexUtil._
     wsAwait.within(requestTimeOut).until(1).regex(stringToExpression(expression(matchers))).find.transform(fn).exists
   }

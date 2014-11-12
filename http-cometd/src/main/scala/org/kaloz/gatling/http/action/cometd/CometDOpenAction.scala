@@ -7,10 +7,9 @@ import io.gatling.core.session._
 import io.gatling.core.util.TimeHelper._
 import io.gatling.http.Predef._
 import io.gatling.http.ahc.{HttpEngine, WsTx}
-import io.gatling.http.check.ws.WsCheck
 import io.gatling.http.config.HttpProtocol
 
-import scala.reflect.{Manifest, ClassTag}
+import scala.reflect.Manifest
 
 class CometDOpenAction(
                         requestName: Expression[String],

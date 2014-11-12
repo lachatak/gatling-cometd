@@ -3,7 +3,6 @@ package org.kaloz.gatling.http.action.cometd
 import akka.actor._
 import akka.testkit.{TestActorRef, TestKit}
 import org.kaloz.gatling.Fixture.TestObject
-import org.kaloz.gatling.http.cometd.CometDMessages.Published
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 class PubSubProccessorActorITest extends TestKit(ActorSystem("GatlingTest"))
@@ -60,7 +59,7 @@ with BeforeAndAfterAll {
     val pubSubProccessorActor = TestActorRef(new PushProccessorActorStub)
 
     var extractor = (m: String) => m.fromJson[TestObject]
-//    system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
+    //    system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
   }
 
   class PushProccessorActorStub extends PushProcessorActor {

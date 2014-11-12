@@ -16,12 +16,12 @@
 package org.kaloz.gatling.http.action.cometd
 
 import akka.actor.ActorRef
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.core.session._
 import io.gatling.core.validation.Validation
 import io.gatling.http.action.RequestAction
-import io.gatling.http.action.ws.{Send, WsAction, WsMessage}
+import io.gatling.http.action.ws._
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor.SubscribeMessage
-import org.kaloz.gatling.http.cometd.CometDMessages.{Ack, Published}
+import org.kaloz.gatling.http.cometd.CometDMessages._
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
 import scala.concurrent.duration.FiniteDuration
@@ -32,7 +32,7 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, buildCheckResponse(cometDProtocolMatchers, { message =>
+    } yield cometDActor ! Send(requestName, resolvedMessage, Some(buildCheckResponse(cometDProtocolMatchers, { message =>
       val ack = message.fromJson[List[Ack]].head
       for {
         s <- ack.subscription if (ack.successful && matchers.nonEmpty)
@@ -40,6 +40,7 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
         actor <- session.attributes.get(PushProcessorActor.PushProcessorName)
         actorRef = actor.asInstanceOf[ActorRef]
       } yield actorRef ! SubscribeMessage(s, matchers, e)
-    }), next, session)
+      message
+    }).get.build), next, session)
   }
 }

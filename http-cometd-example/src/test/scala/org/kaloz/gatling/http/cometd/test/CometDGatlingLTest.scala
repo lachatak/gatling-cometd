@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.{Date, UUID}
 
 import akka.actor.ActorRef
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import io.gatling.app.Gatling
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingPropertiesBuilder
@@ -19,15 +19,15 @@ import scala.concurrent.duration._
 object CometDGatlingTest extends App {
   val gatlingPropertyBuilder = new GatlingPropertiesBuilder
   gatlingPropertyBuilder.simulationClass(classOf[CometDGatlingTest].getName)
-  Gatling.fromMap(gatlingPropertyBuilder.build)
+  new Gatling(gatlingPropertyBuilder.build, None).start
 }
 
-class CometDGatlingTest extends Simulation with Logging {
+class CometDGatlingTest extends Simulation with StrictLogging {
 
   case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}", timestamp: Date = new Date)
 
   implicit val requestTimeOut = 5 seconds
-  val users = 2
+  val users = 1000
 
   val userIdGenerator = new AtomicLong(1)
   val idGenerator = new AtomicLong(1)
