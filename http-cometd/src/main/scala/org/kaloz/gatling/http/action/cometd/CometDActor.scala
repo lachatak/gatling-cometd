@@ -210,17 +210,12 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
       case CheckTimeout(check) =>
         logger.debug(s"Check on WebSocket '$wsName' timed out")
 
-        val checkTime = new Date().getTime
-        logger.debug(s"Timeout message ${checkTime - check.timestamp}")
-        logger.debug(s"Tx      message ${checkTime - check.timestamp}")
-
         tx.check match {
           case Some(`check`) =>
             check.expectation match {
               case ExpectedCount(count) if count == tx.pendingCheckSuccesses.size => succeedPendingCheck(tx.pendingCheckSuccesses)
               case ExpectedRange(range) if range.contains(tx.pendingCheckSuccesses.size) => succeedPendingCheck(tx.pendingCheckSuccesses)
               case _ =>
-                logger.debug(s"Booom ${checkTime - check.timestamp}")
                 val newTx = failPendingCheck(tx, "Check failed: Timeout")
                 context.become(openState(webSocket, newTx))
 

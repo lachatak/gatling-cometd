@@ -55,7 +55,7 @@ class CometDPublishActionBuilderStep1(requestName: Expression[String], cometDNam
 
 class CometDPublishActionBuilderStep2(requestName: Expression[String], cometDName: String, publish: Publish, matchers: Set[String], fn: String => String = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
 
-  def transformer(transformer: String => Any) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
+  def transformer(transformer: String => String) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
 
   def saveAs(saveAs: Option[String]) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
 

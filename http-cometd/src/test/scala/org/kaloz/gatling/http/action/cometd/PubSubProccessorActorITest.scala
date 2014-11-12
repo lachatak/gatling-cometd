@@ -54,21 +54,22 @@ with BeforeAndAfterAll {
 
     io.gatling.ConfigHook.setUpForTest()
 
-    import org.kaloz.gatling.json.JsonMarshallableImplicits._
+//    import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
-    val pubSubProccessorActor = TestActorRef(new PushProccessorActorStub)
-
-    var extractor = (m: String) => m.fromJson[TestObject]
+//    val pubSubProccessorActor = TestActorRef(new PushProccessorActorStub())
+//
+//    var extractor = (m: String) => m.fromJson[TestObject]
     //    system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
   }
 
-  class PushProccessorActorStub extends PushProcessorActor {
+  class PushProccessorActorStub(sessionHandler: ActorRef) extends PushProcessorActor(sessionHandler) {
 
     var received: Option[TestObject] = None
 
     override def messageReceive = {
-      case t@TestObject(_, _) => received = Some(t)
-
+      case t@TestObject(_, _) =>
+        received = Some(t)
+        Map.empty
     }
   }
 

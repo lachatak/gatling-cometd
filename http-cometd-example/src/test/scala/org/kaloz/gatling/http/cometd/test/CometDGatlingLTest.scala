@@ -10,7 +10,6 @@ import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingPropertiesBuilder
 import io.gatling.http.Predef._
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor
-import org.kaloz.gatling.http.action.cometd.SessionHandler.Store
 import org.kaloz.gatling.http.cometd.CometDMessages.PublishedMap
 import org.kaloz.gatling.http.cometd.Predef._
 
@@ -78,12 +77,12 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     )
 }
 
-class TimerCounterProcessor(sessionHandler: ActorRef) extends PushProcessorActor {
+class TimerCounterProcessor(sessionHandler: ActorRef) extends PushProcessorActor(sessionHandler) {
 
   val counter = new AtomicLong(0)
 
   override def messageReceive = {
     case PublishedMap(channel, data) =>
-      sessionHandler ! Store(Map("counter" -> counter.getAndIncrement))
+      Map("counter" -> counter.getAndIncrement)
   }
 }
