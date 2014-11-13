@@ -1,9 +1,8 @@
 package org.kaloz.gatling.http.cometd.test
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
-import java.util.{Date, UUID}
 
-import akka.actor.ActorRef
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.app.Gatling
 import io.gatling.core.Predef._
@@ -27,7 +26,7 @@ object CometDGatlingTest extends App {
 
 class CometDGatlingTest extends Simulation with StrictLogging {
 
-  case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}", timestamp: Date = new Date)
+  case class Shout(message: String = "Echo message!!", userId: String = "${userId}", correlationId: String = "${correlationId}")
 
   implicit val requestTimeOut = 5 seconds
   val users = 2
@@ -77,7 +76,7 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     )
 }
 
-class TimerCounterProcessor(sessionHandler: ActorRef) extends PushProcessorActor(sessionHandler) {
+class TimerCounterProcessor extends PushProcessorActor {
 
   val counter = new AtomicLong(0)
 

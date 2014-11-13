@@ -2,7 +2,7 @@ package org.kaloz.gatling.http.action.cometd
 
 import java.util.Date
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.ActorRef
 import com.ning.http.client.websocket.WebSocket
 import io.gatling.core.akka.BaseActor
 import io.gatling.core.check.CheckResult
@@ -14,16 +14,14 @@ import io.gatling.core.validation.Success
 import io.gatling.http.action.ws._
 import io.gatling.http.ahc.{HttpEngine, WsTx}
 import io.gatling.http.check.ws.{ExpectedCount, ExpectedRange, UntilCount, WsCheck}
-import org.kaloz.gatling.http.action.cometd.PushProcessorActor.Message
-import org.kaloz.gatling.http.action.cometd.SessionHandler.Forward
+import org.kaloz.gatling.http.action.cometd.PushProcessorActor.{Message, SessionUpdates}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
 class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = None) extends BaseActor with DataWriterClient {
 
-  val sessionHandler = system.actorOf(Props[SessionHandler])
-  val pushProcessor = system.actorOf(PushProcessorActor.props(pushProcessorManifest, sessionHandler))
+  val pushProcessor = pushProcessorManifest.map(manifest => context.actorOf(PushProcessorActor.props(manifest)))
 
   def receive = initialState
 
@@ -53,7 +51,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
     context.become(openState(webSocket, newTx))
 
     if (!check.blocking)
-      sessionHandler ! Forward(next, newTx.session)
+      next ! newTx.session
   }
 
   val initialState: Receive = {
@@ -61,6 +59,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
     case OnOpen(tx, webSocket, end) =>
       import tx._
       logger.debug(s"Websocket '$wsName' open")
+
       val newSession = session.set(wsName, self).set(PushProcessorActor.PushProcessorName, pushProcessor)
       val newTx = tx.copy(session = newSession)
 
@@ -68,7 +67,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
         case None =>
           logRequest(session, requestName, OK, start, end)
           context.become(openState(webSocket, newTx))
-          sessionHandler ! Forward(next, newSession)
+          next ! newSession
 
         case Some(c) =>
           // hack, reset check so that there's no pending one
@@ -79,7 +78,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
       import tx._
       logger.debug(s"Websocket '$wsName' failed to open: $message")
       logRequest(session, requestName, KO, start, end, Some(message))
-      sessionHandler ! Forward(next, session.markAsFailed)
+      next ! session.markAsFailed
 
       context.stop(self)
   }
@@ -153,7 +152,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
             // apply updates and release blocked flow
             val newSession = tx.session.update(newUpdates)
 
-            sessionHandler ! Forward(tx.next, newSession)
+            tx.next! newSession
             val newTx = tx.copy(session = newSession, updates = Nil, check = None, pendingCheckSuccesses = Nil)
             context.become(openState(webSocket, newTx))
 
@@ -170,7 +169,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
     def reconciliate(next: ActorRef, session: Session): Unit = {
       val newTx = tx.applyUpdates(session)
       context.become(openState(webSocket, newTx))
-      sessionHandler ! Forward(next, newTx.session)
+      next ! newTx.session
     }
 
     {
@@ -205,7 +204,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
           .copy(check = None, pendingCheckSuccesses = Nil)
 
         context.become(openState(webSocket, newTx))
-        sessionHandler ! Forward(next, newTx.session)
+        next ! newTx.session
 
       case CheckTimeout(check) =>
         logger.debug(s"Check on WebSocket '$wsName' timed out")
@@ -221,7 +220,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
 
                 if (check.blocking)
                 // release blocked session
-                  sessionHandler ! Forward(newTx.next, newTx.applyUpdates(newTx.session).session)
+                  newTx.next ! newTx.applyUpdates(newTx.session).session
             }
 
           case _ =>
@@ -231,7 +230,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
       case OnTextMessage(message, time) =>
         logger.debug(s"Received text message on websocket '$wsName':$message")
 
-        pushProcessor ! Message(message)
+        pushProcessor.foreach(_ ! Message(message))
 
         implicit val cache = mutable.Map.empty[Any, Any]
 
@@ -277,6 +276,10 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
         // this close order wasn't triggered by the client, otherwise, we would have received a Close first and state would be closing or stopped
         handleClose(status, reason, time)
 
+      case SessionUpdates(newUpdates) =>
+        val newTx = tx.copy(updates = newUpdates ::: tx.updates)
+        context.become(openState(webSocket, newTx))
+
       case unexpected =>
         logger.info(s"Discarding unknown message $unexpected while in open state")
     }
@@ -286,7 +289,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
     case m: OnClose =>
       import tx._
       logRequest(session, requestName, OK, start, nowMillis)
-      sessionHandler ! Forward(next, session.remove(wsName))
+      next ! session.remove(wsName)
       context.stop(self)
 
     case unexpected =>
@@ -326,7 +329,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
       import action._
       val now = nowMillis
       logRequest(session, requestName, KO, now, now, Some(error))
-      sessionHandler ! Forward(next, session.update(tx.updates).markAsFailed.remove(wsName))
+      next ! session.update(tx.updates).markAsFailed.remove(wsName)
       context.stop(self)
 
     case unexpected =>

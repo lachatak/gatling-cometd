@@ -1,16 +1,15 @@
 package org.kaloz.gatling.http.action.cometd
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import io.gatling.core.session.SessionPrivateAttributes
-import org.kaloz.gatling.http.action.cometd.PushProcessorActor.{Message, SubscribeMessage, UnsubscribeMessage}
-import org.kaloz.gatling.http.action.cometd.SessionHandler.Store
+import akka.actor.{Actor, ActorLogging, Props}
+import io.gatling.core.session.{Session, SessionPrivateAttributes}
+import org.kaloz.gatling.http.action.cometd.PushProcessorActor.{Message, SessionUpdates, SubscribeMessage, UnsubscribeMessage}
 import org.kaloz.gatling.http.cometd.CometDMessages.Published
 import org.kaloz.gatling.regex.RegexUtil._
 
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
-abstract class PushProcessorActor(sessionHandler: ActorRef) extends Actor with ActorLogging {
+abstract class PushProcessorActor extends Actor with ActorLogging {
 
   override def receive: Actor.Receive = process()
 
@@ -24,33 +23,24 @@ abstract class PushProcessorActor(sessionHandler: ActorRef) extends Actor with A
         (regex, extractor) <- subscriptions.values
         matching <- regex.findFirstIn(message)
         result = extractor(matching)
-      } yield sessionHandler ! Store(messageReceive(result))
+      } yield context.parent ! SessionUpdates(messageReceive(result).map { case (key, value) => (session: Session) => session.set(key, value)}(collection.breakOut): List[Session => Session])
   }
 
   def messageReceive: PartialFunction[Published, Map[String, Any]]
-}
-
-class DefaultPushProcessor(sessionHandler: ActorRef) extends PushProcessorActor(sessionHandler) {
-
-  override def receive: Actor.Receive = {
-    case _ =>
-  }
-
-  def messageReceive = {
-    case _ => Map.empty
-  }
 }
 
 object PushProcessorActor {
 
   val PushProcessorName = SessionPrivateAttributes.PrivateAttributePrefix + "http.pushProcessor"
 
-  def props(pushProcessorManifest: Option[ClassTag[_]], sessionHandler: ActorRef): Props = Props.create(pushProcessorManifest.getOrElse(Manifest.classType(classOf[DefaultPushProcessor])).runtimeClass, sessionHandler)
+  def props(pushProcessorManifest: ClassTag[_]): Props = Props.create(pushProcessorManifest.runtimeClass)
 
   case class SubscribeMessage(subscription: String, matchers: Set[String], extractor: String => Published)
 
   case class UnsubscribeMessage(subscription: String)
 
   case class Message(message: String)
+
+  case class SessionUpdates(update: List[Session => Session])
 
 }

@@ -32,13 +32,13 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, Some(buildCheckResponse(cometDProtocolMatchers, { message =>
+    } yield cometDActor ! Send(requestName, resolvedMessage, Some(check(cometDProtocolMatchers, { message =>
       val ack = message.fromJson[List[Ack]].head
       for {
         s <- ack.subscription if (ack.successful && matchers.nonEmpty)
         e <- extractor
-        actor <- session.attributes.get(PushProcessorActor.PushProcessorName)
-        actorRef = actor.asInstanceOf[ActorRef]
+        pushProcessor <- session.attributes.get(PushProcessorActor.PushProcessorName)
+        actorRef <- pushProcessor.asInstanceOf[Option[ActorRef]]
       } yield actorRef ! SubscribeMessage(s, matchers, e)
       message
     }).build), next, session)

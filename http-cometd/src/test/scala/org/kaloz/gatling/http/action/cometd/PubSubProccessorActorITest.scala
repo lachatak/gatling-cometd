@@ -62,7 +62,7 @@ with BeforeAndAfterAll {
     //    system.eventStream.publish(SubscribeMessage("/test", Set("content"), extractor))
   }
 
-  class PushProccessorActorStub(sessionHandler: ActorRef) extends PushProcessorActor(sessionHandler) {
+  class PushProccessorActorStub extends PushProcessorActor {
 
     var received: Option[TestObject] = None
 
