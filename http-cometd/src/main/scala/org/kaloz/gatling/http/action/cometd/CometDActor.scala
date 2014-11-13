@@ -152,7 +152,7 @@ class CometDActor(wsName: String, pushProcessorManifest: Option[ClassTag[_]] = N
             // apply updates and release blocked flow
             val newSession = tx.session.update(newUpdates)
 
-            tx.next! newSession
+            tx.next ! newSession
             val newTx = tx.copy(session = newSession, updates = Nil, check = None, pendingCheckSuccesses = Nil)
             context.become(openState(webSocket, newTx))
 
