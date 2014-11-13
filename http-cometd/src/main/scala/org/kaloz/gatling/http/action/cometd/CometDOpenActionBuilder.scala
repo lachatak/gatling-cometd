@@ -53,11 +53,11 @@ class CometDPublishActionBuilderStep1(requestName: Expression[String], cometDNam
   def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, publish, None, next))
 }
 
-class CometDPublishActionBuilderStep2(requestName: Expression[String], cometDName: String, publish: Publish, matchers: Set[String], fn: String => String = { m => m}, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
+class CometDPublishActionBuilderStep2(requestName: Expression[String], cometDName: String, publish: Publish, matchers: Set[String], fn: String => String = identity[String], saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder with CometDCheckBuilder {
 
   def transformer(transformer: String => String) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
 
-  def saveAs(saveAs: Option[String]) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, saveAs)
+  def saveAs(saveAs: String) = new CometDPublishActionBuilderStep2(requestName, cometDName, publish, matchers, fn, Some(saveAs))
 
   def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, publish, Some(buildCheckResponse(matchers, fn, saveAs)), next))
 }
@@ -85,9 +85,7 @@ trait CometDCheckBuilder {
 
   val cometDProtocolMatchers = Set("\"id\":\"${id}\"", "\"successful\":true")
 
-  val Identity: String => String = identity[String]
-
-  protected def buildCheckResponse(matchers: Set[String], transformer: String => String = Identity, saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) = {
+  protected def buildCheckResponse(matchers: Set[String], transformer: String => String = identity[String], saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) = {
     val response = this.response(transformer, matchers)
     if (saveAs.isDefined)
       response.saveAs(saveAs.get)
