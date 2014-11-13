@@ -6,16 +6,20 @@ import io.gatling.http.Predef._
 import io.gatling.http.config.HttpProtocol
 import io.gatling.http.request.builder.ws.WsRequestExpressionBuilder
 import io.gatling.http.request.builder.{CommonAttributes, RequestBuilder}
-import org.kaloz.gatling.http.action.cometd.CometDOpenActionBuilder
+import org.kaloz.gatling.http.action.cometd.{CometDOpenActionBuilder, PushProcessorActor}
+
+import scala.reflect.Manifest
 
 object CometDOpenRequestBuilder {
 
   implicit def toActionBuilder(requestBuilder: CometDOpenRequestBuilder): ActionBuilder = new CometDOpenActionBuilder(requestBuilder.commonAttributes.requestName, requestBuilder.wsName, requestBuilder)
 }
 
-class CometDOpenRequestBuilder(commonAttributes: CommonAttributes, val wsName: String) extends RequestBuilder[CometDOpenRequestBuilder](commonAttributes) {
+class CometDOpenRequestBuilder(commonAttributes: CommonAttributes, val wsName: String, val pubSubProcessorManifest: Option[Manifest[_]] = None) extends RequestBuilder[CometDOpenRequestBuilder](commonAttributes) {
 
-  def newInstance(commonAttributes: CommonAttributes) = new CometDOpenRequestBuilder(commonAttributes, wsName)
+  def newInstance(commonAttributes: CommonAttributes) = new CometDOpenRequestBuilder(commonAttributes, wsName, pubSubProcessorManifest)
+
+  def pushProcessor[T <: PushProcessorActor : Manifest] = new CometDOpenRequestBuilder(commonAttributes, wsName, Some(manifest))
 
   def build(protocol: HttpProtocol): Expression[Request] = new WsRequestExpressionBuilder(commonAttributes, protocol).build
 }
