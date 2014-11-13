@@ -2,7 +2,7 @@ package org.kaloz.gatling.http.action.cometd
 
 import akka.actor.{Actor, ActorLogging, Props}
 import io.gatling.core.session.{Session, SessionPrivateAttributes}
-import org.kaloz.gatling.http.action.cometd.PushProcessorActor.{Message, SessionUpdates, SubscribeMessage, UnsubscribeMessage}
+import org.kaloz.gatling.http.action.cometd.PushProcessorActor.SessionUpdates
 import org.kaloz.gatling.http.cometd.CometDMessages.Published
 import org.kaloz.gatling.regex.RegexUtil._
 
