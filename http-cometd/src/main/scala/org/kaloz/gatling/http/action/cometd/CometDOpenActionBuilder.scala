@@ -9,7 +9,7 @@ import io.gatling.core.session._
 import io.gatling.http.Predef._
 import io.gatling.http.action.HttpActionBuilder
 import io.gatling.http.action.ws._
-import io.gatling.http.check.ws.{WsCheck, WsCheckBuilder}
+import io.gatling.http.check.ws._
 import org.kaloz.gatling.http.action.cometd.CheckBuilderConverter._
 import org.kaloz.gatling.http.action.cometd.MessageConverter._
 import org.kaloz.gatling.http.cometd.CometDMessages._
@@ -81,26 +81,26 @@ class CometDUnsubscribeActionBuilder(requestName: Expression[String], cometDName
   def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new CometDUnsubscribeAction(requestName, cometDName, unsubscribe, next))
 }
 
-case class CometDCheckBuilder(matchers: Set[String] = cometDProtocolMatchers, transformer: String => String = identity[String], saveAs: Option[String] = None)(implicit requestTimeOut: FiniteDuration) {
+case class CometDCheckBuilder(matchers: Set[String] = cometDProtocolMatchers, transformer: String => String = identity[String], saveAsName: Option[String] = None)(implicit requestTimeOut: FiniteDuration) {
 
-  def buildWsCheckBuilder = {
-    val response = this.response(transformer, matchers)
-    if (saveAs.isDefined)
-      response.saveAs(saveAs.get)
+  val wsCheckBuilder = {
+    val wsCheckBuilder = this.buildWsCheckBuilder(transformer, matchers)
+    if (saveAsName.isDefined)
+      wsCheckBuilder.saveAs(saveAsName.get)
     else
-      response
+      wsCheckBuilder
   }
 
-  private def response(fn: String => String, matchers: Set[String])(implicit requestTimeOut: FiniteDuration): WsCheckBuilder with SaveAs[WsCheck, String, _, String] = {
+  private def buildWsCheckBuilder(fn: String => String, matchers: Set[String])(implicit requestTimeOut: FiniteDuration): WsCheckBuilder with SaveAs[WsCheck, String, _, String] = {
     wsAwait.within(requestTimeOut).until(1).regex(stringToExpression(expression(matchers))).find.transform(fn).exists
   }
 }
 
 object CheckBuilderConverter {
 
-  implicit def toWsCheckBuilder(cometDCheckBuilder: CometDCheckBuilder): Option[WsCheckBuilder] = Some(cometDCheckBuilder.buildWsCheckBuilder)
+  implicit def toWsCheckBuilder(cometDCheckBuilder: CometDCheckBuilder): Option[WsCheckBuilder] = Some(cometDCheckBuilder.wsCheckBuilder)
 
-  implicit def toWsCheck(cometDCheckBuilder: CometDCheckBuilder): Option[WsCheck] = Some(cometDCheckBuilder.buildWsCheckBuilder.build)
+  implicit def toWsCheck(cometDCheckBuilder: CometDCheckBuilder): Option[WsCheck] = Some(cometDCheckBuilder.wsCheckBuilder.build)
 }
 
 object MessageConverter {
