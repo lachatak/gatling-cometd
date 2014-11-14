@@ -33,14 +33,16 @@ class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: S
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheckBuilder(cometDProtocolMatchers, { message =>
-      val ack = message.fromJson[List[Ack]].head
-      for {
-        s <- ack.subscription if (ack.successful)
-        pushProcessor <- session.attributes.get(PushProcessorActor.PushProcessorName)
-        actorRef <- pushProcessor.asInstanceOf[Option[ActorRef]]
-      } yield actorRef ! UnsubscribeMessage(s)
-      message
-    }), next, session)
+    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheckBuilder(cometDProtocolMatchers, generateTransform(session)), next, session)
+  }
+
+  def generateTransform(session: Session): String => String = { message =>
+    val ack = message.fromJson[List[Ack]].head
+    for {
+      s <- ack.subscription if (ack.successful)
+      pushProcessor <- session.attributes.get(PushProcessorActor.PushProcessorName)
+      actorRef <- pushProcessor.asInstanceOf[Option[ActorRef]]
+    } yield actorRef ! UnsubscribeMessage(s)
+    message
   }
 }
