@@ -25,14 +25,15 @@ import org.kaloz.gatling.http.cometd.CometDMessages._
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
 import scala.concurrent.duration.FiniteDuration
+import org.kaloz.gatling.http.action.cometd.CheckBuilderConverter._
 
-class CometDSubscribeAction(val requestName: Expression[String], cometDName: String, message: Expression[WsMessage], matchers: Set[String], extractor: Option[String => Published], val next: ActorRef)(implicit requestTimeOut: FiniteDuration) extends RequestAction with WsAction with CometDCheckBuilder {
+class CometDSubscribeAction(val requestName: Expression[String], cometDName: String, message: Expression[WsMessage], matchers: Set[String], extractor: Option[String => Published], val next: ActorRef)(implicit requestTimeOut: FiniteDuration) extends RequestAction with WsAction {
 
   def sendRequest(requestName: String, session: Session): Validation[Unit] = {
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, Some(check(cometDProtocolMatchers, { message =>
+    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheckBuilder(cometDProtocolMatchers, { message =>
       val ack = message.fromJson[List[Ack]].head
       for {
         s <- ack.subscription if (ack.successful && matchers.nonEmpty)
@@ -41,6 +42,6 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
         actorRef <- pushProcessor.asInstanceOf[Option[ActorRef]]
       } yield actorRef ! SubscribeMessage(s, matchers, e)
       message
-    }).build), next, session)
+    }), next, session)
   }
 }
