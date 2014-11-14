@@ -20,19 +20,20 @@ import io.gatling.core.session.{Expression, Session}
 import io.gatling.core.validation.Validation
 import io.gatling.http.action.RequestAction
 import io.gatling.http.action.ws.{Send, WsAction, WsMessage}
+import org.kaloz.gatling.http.action.cometd.CheckBuilderConverter._
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor.UnsubscribeMessage
 import org.kaloz.gatling.http.cometd.CometDMessages.Ack
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
 import scala.concurrent.duration.FiniteDuration
 
-class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: String, message: Expression[WsMessage], val next: ActorRef)(implicit requestTimeOut: FiniteDuration) extends RequestAction with WsAction with CometDCheckBuilder {
+class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: String, message: Expression[WsMessage], val next: ActorRef)(implicit requestTimeOut: FiniteDuration) extends RequestAction with WsAction {
 
   def sendRequest(requestName: String, session: Session): Validation[Unit] = {
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, Some(check(cometDProtocolMatchers, { message =>
+    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheckBuilder(cometDProtocolMatchers, { message =>
       val ack = message.fromJson[List[Ack]].head
       for {
         s <- ack.subscription if (ack.successful)
@@ -40,6 +41,6 @@ class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: S
         actorRef <- pushProcessor.asInstanceOf[Option[ActorRef]]
       } yield actorRef ! UnsubscribeMessage(s)
       message
-    }).build), next, session)
+    }), next, session)
   }
 }
