@@ -16,7 +16,7 @@ object CometDMessages {
 
   case class Unsubscribe(channel: String = "/meta/unsubscribe", clientId: String = "${clientId}", subscription: String, id: Option[String] = Some("${id}"))
 
-  case class Publish(channel: String, data: Any, clientId: Option[String] = Some("${clientId}"), ext: Option[Any] = None)
+  case class Publish(channel: String, data: Any, clientId: String = "${clientId}", ext: Option[Any] = None)
 
   case class PublishedMap(channel: String, data: Map[String, Any]) extends Published
 

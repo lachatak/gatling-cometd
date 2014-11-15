@@ -20,8 +20,9 @@ import io.gatling.core.session.{Expression, Session}
 import io.gatling.core.validation.Validation
 import io.gatling.http.action.RequestAction
 import io.gatling.http.action.ws.{Send, WsAction, WsMessage}
-import org.kaloz.gatling.http.action.cometd.CheckBuilderConverter._
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor.UnsubscribeMessage
+import org.kaloz.gatling.http.check.CheckBuilderConverter._
+import org.kaloz.gatling.http.check.CometDCheck
 import org.kaloz.gatling.http.cometd.CometDMessages.Ack
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
@@ -33,10 +34,10 @@ class CometDUnsubscribeAction(val requestName: Expression[String], cometDName: S
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheckBuilder(transformer = generateTransformer(session)), next, session)
+    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheck(transformer = generateUnsubscribeTransformer(session)), next, session)
   }
 
-  def generateTransformer(session: Session): String => String = { message =>
+  def generateUnsubscribeTransformer(session: Session): String => String = { message =>
     val ack = message.fromJson[List[Ack]].head
     for {
       s <- ack.subscription if (ack.successful)

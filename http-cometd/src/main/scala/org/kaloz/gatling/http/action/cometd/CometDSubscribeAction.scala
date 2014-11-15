@@ -20,8 +20,9 @@ import io.gatling.core.session._
 import io.gatling.core.validation.Validation
 import io.gatling.http.action.RequestAction
 import io.gatling.http.action.ws._
-import org.kaloz.gatling.http.action.cometd.CheckBuilderConverter._
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor.SubscribeMessage
+import org.kaloz.gatling.http.check.CheckBuilderConverter._
+import org.kaloz.gatling.http.check.CometDCheck
 import org.kaloz.gatling.http.cometd.CometDMessages._
 import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
@@ -33,10 +34,10 @@ class CometDSubscribeAction(val requestName: Expression[String], cometDName: Str
     for {
       cometDActor <- fetchWebSocket(cometDName, session)
       resolvedMessage <- message(session)
-    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheckBuilder(transformer = generateTransformer(session)), next, session)
+    } yield cometDActor ! Send(requestName, resolvedMessage, CometDCheck(transformer = generateSubscribeTransformer(session)), next, session)
   }
 
-  def generateTransformer(session: Session): String => String = {
+  def generateSubscribeTransformer(session: Session): String => String = {
     message =>
       val ack = message.fromJson[List[Ack]].head
       for {

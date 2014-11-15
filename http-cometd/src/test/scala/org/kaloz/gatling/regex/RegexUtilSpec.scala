@@ -6,7 +6,7 @@ import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AllExpectations
 
 @RunWith(classOf[JUnitRunner])
-class RegexUtilUTest extends Specification with AllExpectations {
+class RegexUtilSpec extends Specification with AllExpectations {
 
   "RegexUtil" should {
 
@@ -14,28 +14,28 @@ class RegexUtilUTest extends Specification with AllExpectations {
 
     "generate correct regex string with 1 element" in {
 
-      val result = RegexUtil.expression(Set("px")).r.findFirstIn(text)
+      val result = RegexUtil.containsAll(Set("px")).r.findFirstIn(text)
 
       result mustEqual Some(text)
     }
 
     "generate correct forwardlooking regex string" in {
 
-      val result = RegexUtil.expression(Set("px", "km")).r.findFirstIn(text)
+      val result = RegexUtil.containsAll(Set("px", "km")).r.findFirstIn(text)
 
       result mustEqual Some(text)
     }
 
     "generate correct forwardlooking regex strign in reversed order" in {
 
-      val result = RegexUtil.expression(Set("km", "px")).r.findFirstIn(text)
+      val result = RegexUtil.containsAll(Set("km", "px")).r.findFirstIn(text)
 
       result mustEqual Some(text)
     }
 
     "generate correct forwardlooking regex string one element missing" in {
 
-      val result = RegexUtil.expression(Set("px", "xxx")).r.findFirstIn(text)
+      val result = RegexUtil.containsAll(Set("px", "xxx")).r.findFirstIn(text)
 
       result mustEqual None
     }

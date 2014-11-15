@@ -7,7 +7,7 @@ import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AllExpectations
 
 @RunWith(classOf[JUnitRunner])
-class JsonUtilUTest extends Specification with AllExpectations {
+class JsonUtilSpec extends Specification with AllExpectations {
 
   "JsonUtil" should {
 

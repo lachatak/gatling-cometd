@@ -21,7 +21,7 @@ object CometDGatlingTest extends App {
   props.requestBodiesDirectory(IDEPathHelper.requestBodiesDirectory.toString)
   props.binariesDirectory(IDEPathHelper.mavenBinariesDirectory.toString)
   props.mute()
-  new Gatling(props.build, None).start
+  Gatling.fromMap(props.build)
 }
 
 class CometDGatlingTest extends Simulation with StrictLogging {

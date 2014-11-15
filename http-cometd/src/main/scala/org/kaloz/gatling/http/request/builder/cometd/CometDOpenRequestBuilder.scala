@@ -15,9 +15,9 @@ object CometDOpenRequestBuilder {
   implicit def toActionBuilder(requestBuilder: CometDOpenRequestBuilder): ActionBuilder = new CometDOpenActionBuilder(requestBuilder.commonAttributes.requestName, requestBuilder.wsName, requestBuilder)
 }
 
-class CometDOpenRequestBuilder(commonAttributes: CommonAttributes, val wsName: String, val pubSubProcessorManifest: Option[Manifest[_]] = None) extends RequestBuilder[CometDOpenRequestBuilder](commonAttributes) {
+class CometDOpenRequestBuilder(commonAttributes: CommonAttributes, val wsName: String, val pushProcessorManifest: Option[Manifest[_]] = None) extends RequestBuilder[CometDOpenRequestBuilder](commonAttributes) {
 
-  def newInstance(commonAttributes: CommonAttributes) = new CometDOpenRequestBuilder(commonAttributes, wsName, pubSubProcessorManifest)
+  def newInstance(commonAttributes: CommonAttributes) = new CometDOpenRequestBuilder(commonAttributes, wsName, pushProcessorManifest)
 
   def pushProcessor[T <: PushProcessorActor : Manifest] = new CometDOpenRequestBuilder(commonAttributes, wsName, Some(manifest))
 

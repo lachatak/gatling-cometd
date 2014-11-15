@@ -15,7 +15,7 @@ abstract class PushProcessorActor extends Actor with ActorLogging {
 
   def process(subscriptions: Map[String, (Regex, String => Published)] = Map.empty): Actor.Receive = {
     case SubscribeMessage(subscription, matchers, extractor) =>
-      context become process(subscriptions + (subscription ->(expression(matchers).r, extractor)))
+      context become process(subscriptions + (subscription ->(containsAll(matchers).r, extractor)))
     case UnsubscribeMessage(subscription) =>
       context become process(subscriptions = subscriptions - subscription)
     case Message(message) =>
