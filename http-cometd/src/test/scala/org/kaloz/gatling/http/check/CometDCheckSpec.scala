@@ -2,38 +2,95 @@ package org.kaloz.gatling.http.check
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.Status.Success
-import io.gatling.core.check.{ValidatorCheckBuilder, CheckBase}
+import io.gatling.core.check.{CheckBase, CheckResult}
 import io.gatling.core.session.Session
+import io.gatling.core.validation
 import io.gatling.http.check.ws.UntilCount
-import org.junit.runner.RunWith
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
-import org.specs2.specification.AllExpectations
+import org.scalatest.{Matchers, WordSpecLike}
+
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 
-@RunWith(classOf[JUnitRunner])
-class CometDCheckSpec extends Specification with AllExpectations {
+class CometDCheckSpec extends WordSpecLike
+with Matchers {
 
   "CometDCheck" should {
 
-    "generate correct wsCheck" in {
-      implicit val requestTimeOut = Duration(5, TimeUnit.SECONDS)
+    val validMessage = """"id":"1", "successful":true"""
+    val invalidMessage = "test"
 
-      val session = Session("scenarioName", "userId", Map("id" -> 1))
+    "generate correct wsCheck without saveAs and accept a valid response" in new scope {
+      val cometDCheck = CometDCheck()(requestTimeOut)
 
-      val cometDCheck = CometDCheck()
 
       val wsCheck = cometDCheck.wsCheckBuilder.build
 
-      wsCheck.blocking mustEqual true
-      wsCheck.timeout mustEqual requestTimeOut
-      wsCheck.expectation mustEqual UntilCount(1)
-      wsCheck.wrapped.asInstanceOf[CheckBase[_, _, _]].saveAs mustEqual None
-//      wsCheck.wrapped.asInstanceOf[CheckBase[_, _, _]].preparer mustEqual None
-//      wsCheck.wrapped.asInstanceOf[CheckBase[_, _, _]].extractorExpression(session).toString mustEqual ""
-//      wsCheck.wrapped.asInstanceOf[CheckBase[_, _, _]].validatorExpression mustEqual None
+      wsCheck.blocking should be(true)
+      wsCheck.timeout should be(requestTimeOut)
+      wsCheck.expectation should be(UntilCount(1))
+      wsCheck.wrapped.asInstanceOf[CheckBase[String, _, _]].saveAs should be(None)
+
+      wsCheck.wrapped.check(validMessage, session)(cache).get should be(CheckResult(Some(validMessage), None))
     }
+
+    "generate correct wsCheck with saveAs and accept a valid response meanwhile saving the result" in new scope {
+      val cometDCheck = CometDCheck(saveAsName = Some("value"))(requestTimeOut)
+
+
+      val wsCheck = cometDCheck.wsCheckBuilder.build
+
+      wsCheck.blocking should be(true)
+      wsCheck.timeout should be(requestTimeOut)
+      wsCheck.expectation should be(UntilCount(1))
+      wsCheck.wrapped.asInstanceOf[CheckBase[String, _, _]].saveAs should be(Some("value"))
+
+      val checkResult = wsCheck.wrapped.check(validMessage, session)(cache).get
+      checkResult should be(CheckResult(Some(validMessage), Some("value")))
+
+      val newSession = checkResult.update.get(session)
+
+      newSession.attributes.getOrElse("value", "NONE") should be(validMessage)
+    }
+
+    "generate correct wsCheck which failure for invalid response" in new scope {
+      val cometDCheck = CometDCheck()(requestTimeOut)
+
+
+      val wsCheck = cometDCheck.wsCheckBuilder.build
+
+      wsCheck.blocking should be(true)
+      wsCheck.timeout should be(requestTimeOut)
+      wsCheck.expectation should be(UntilCount(1))
+      wsCheck.wrapped.asInstanceOf[CheckBase[String, _, _]].saveAs should be(None)
+
+      private val failureMessage: String = """regex((?=.*"id":"1")(?=.*"successful":true).*) transform.find(0).exists, found nothing"""
+      wsCheck.wrapped.check(invalidMessage, session)(cache) should be(validation.Failure(failureMessage))
+    }
+
+    "generate correct wsCheck without saveAs and accept a valid response meanwhile applying the transformer" in new scope {
+      val cometDCheck = CometDCheck(transformer = { m => m.reverse})(requestTimeOut)
+
+
+      val wsCheck = cometDCheck.wsCheckBuilder.build
+
+      wsCheck.blocking should be(true)
+      wsCheck.timeout should be(requestTimeOut)
+      wsCheck.expectation should be(UntilCount(1))
+      wsCheck.wrapped.asInstanceOf[CheckBase[String, _, _]].saveAs should be(None)
+
+      val checkResult = wsCheck.wrapped.check(validMessage, session)(cache).get
+      checkResult should be(CheckResult(Some(validMessage.reverse), None))
+    }
+  }
+
+  private trait scope {
+
+    io.gatling.ConfigHook.setUpForTest()
+
+    implicit val cache = mutable.Map.empty[Any, Any]
+    implicit val requestTimeOut = Duration(5, TimeUnit.SECONDS)
+
+    val session = Session("scenarioName", "userId", Map("id" -> 1))
   }
 
 }
