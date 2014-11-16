@@ -80,7 +80,7 @@ class TimerCounterProcessor extends PushProcessorActor {
 
   val counter = new AtomicLong(0)
 
-  override def messageReceive = {
+  override def sessionUpdates = {
     case PublishedMap(channel, data) =>
       Map("counter" -> counter.getAndIncrement)
   }

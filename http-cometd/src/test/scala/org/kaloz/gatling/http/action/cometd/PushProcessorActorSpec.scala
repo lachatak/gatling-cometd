@@ -7,7 +7,7 @@ import org.kaloz.gatling.Fixture._
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor.{Message, SessionUpdates, SubscribeMessage, UnsubscribeMessage}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-class PushProccessorActorSpec extends TestKit(ActorSystem("GatlingTest"))
+class PushProcessorActorSpec extends TestKit(ActorSystem("GatlingTest"))
 with WordSpecLike
 with Matchers
 with BeforeAndAfterAll {
@@ -23,7 +23,7 @@ with BeforeAndAfterAll {
       pushProccessorActor ! Message(testJsonString)
 
       parent.expectMsgPF() {
-        case SessionUpdates(l@List(_, _)) => {
+        case SessionUpdates(l@List(_, _)) =>
           l should have size 2
 
           val newSession = session.update(l)
@@ -31,7 +31,7 @@ with BeforeAndAfterAll {
           newSession.attributes.getOrElse("content", 0) should be(10)
 
           newSession.attributes should have size 2
-        }
+
         case _ => fail()
       }
     }
@@ -58,7 +58,7 @@ with BeforeAndAfterAll {
     io.gatling.ConfigHook.setUpForTest()
 
     val parent = TestProbe()
-    val pushProccessorActor = TestActorRef(Props[PushProccessorActorStub], parent.ref, "pushProcessor")
+    val pushProccessorActor = TestActorRef(Props[PushProcessorActorStub], parent.ref, "pushProcessor")
 
     import org.kaloz.gatling.json.JsonMarshallableImplicits._
 
@@ -70,9 +70,9 @@ with BeforeAndAfterAll {
 
 }
 
-class PushProccessorActorStub extends PushProcessorActor {
+class PushProcessorActorStub extends PushProcessorActor {
 
-  override def messageReceive = {
+  override def sessionUpdates = {
     case TestObject(message, content) =>
       Map("message" -> message, "content" -> content("elem2"))
   }

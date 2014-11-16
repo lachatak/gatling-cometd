@@ -11,6 +11,8 @@ import scala.util.matching.Regex
 
 abstract class PushProcessorActor extends Actor with ActorLogging {
 
+  type Update = PartialFunction[Published, Map[String, Any]]
+
   override def receive: Actor.Receive = process()
 
   def process(subscriptions: Map[String, (Regex, String => Published)] = Map.empty): Actor.Receive = {
@@ -23,10 +25,10 @@ abstract class PushProcessorActor extends Actor with ActorLogging {
         (regex, extractor) <- subscriptions.values
         matching <- regex.findFirstIn(message)
         result = extractor(matching)
-      } yield context.parent ! SessionUpdates(messageReceive(result).map { case (key, value) => (session: Session) => session.set(key, value)}(collection.breakOut): List[Session => Session])
+      } yield context.parent ! SessionUpdates(sessionUpdates(result).map { case (key, value) => (session: Session) => session.set(key, value)}(collection.breakOut): List[Session => Session])
   }
 
-  def messageReceive: PartialFunction[Published, Map[String, Any]]
+  def sessionUpdates: Update
 }
 
 object PushProcessorActor {
