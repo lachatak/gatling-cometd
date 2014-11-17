@@ -11,7 +11,7 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
     .execCometD(cometD("Subscribe Timer").subscribe("/timer/${userId}").acceptPushContains(Set("TriggeredTime")))
     .execCometD(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
 
-    .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+    .execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 
     .execCometD(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
     .execCometD(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
@@ -77,7 +77,7 @@ After the *handshake* and *connect* you are ready to send and receive messages. 
 command to the server. Before I send the command I generate a new correlationId for my messages. I use this id to be able to pair requests with responses at the client side. For this I have to instruct the extension to wait until a message arrives which has the same correlationId and contains all other required extra data I need. With this you could fine tune what do you regard as a successful response.
 In my case I am waiting for a response message which has the same correlationId and I expect some extra content in the response. It could happen that the response arrives with the correct correlationId but instead of having *EchoedMessage* type it has *Exception* type. In this case the extension doesn't consider it a valid response. It is up to the implementor to define the extra criteria. Strings defined in the matchers field might be anywhere in the response but all of them should be there at once!!
 ```scala
-    .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+    .execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 ```
 In this case the following request/response will be accepted as a valid pair:
 ```json
@@ -106,7 +106,7 @@ After the test you might want to unsubscribe and disconnect. The unsubscription 
 ## Check response ##
 It is common problem that you would like to accept cometD responses which has specific content. To support this demad there is a *acceptResponseContains* method what you can use after sending a command. Only a message will be accepted which contains all the listed string items in any order. Using this DSL elemen provides some extra methods to fine tune the response procession.
 ```scala
-    .feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")).transformer(message => message.fromJson[List[Ack]].head.clientId.get).saveAs("clientId"))
+    .execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")).transformer(message => message.fromJson[List[Ack]].head.clientId.get).saveAs("clientId"))
 ```
 - using the *transformer* DSL element if you would like to transform the incoming message to something more meaningful for you. In this case I transform the message to *Ack* object and get the clientId from it. It could be any complex object what is required by your test.
 - If you would like to save the extraced value you jast pass the *savaAs* parameter and the resoult will be saved to the session using the given name. In this case I save the extracted clientId to the session with the name *clientId*.
@@ -131,7 +131,7 @@ class TimerCounterProcessor(sessionHandler: ActorRef) extends PushProcessorActor
 As the Map will be used to update the session behind the scene in your test you could use any gatling DSL element to react on those new session changes.  
 ```scala
       .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
-      pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      pause(1, 2).execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
     }
 ```
 Tee above example is going to send *shout command* as long as the server doesn't push 3 messages to the UI. As you may noticed I subscribed to the */timer/${userId}* pused messages. So If the server push a message the *TimerCounterProcessor* handles it and provides a new value for the *counter* variable.
@@ -139,7 +139,7 @@ It works perfectly if you have any activity in your loop. If this is not the cas
 ```scala
     .waitFor(session => session("counter").asOption[Long].getOrElse(0l) < 8) 
     //execute after the condition holds
-    .pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+    .pause(1, 2).execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 ```
 
 What if you have different content in your pubished messages? In this case you have to pass your own extractor function to the subscription method.

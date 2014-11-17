@@ -40,7 +40,6 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     .disableWarmUp
 
   val userIdFeeder = Iterator.continually(Map("userId" -> userIdGenerator.getAndIncrement()))
-  val uuidFeeder = Iterator.continually(Map("correlationId" -> UUID.randomUUID.toString))
 
   val scn = scenario("cometD")
     .feed(userIdFeeder)
@@ -48,18 +47,18 @@ class CometDGatlingTest extends Simulation with StrictLogging {
 
     .execCometD(cometD("Open").open("/bayeux").pushProcessor[TimerCounterProcessor])
     .execCometD(cometD("Handshake").handshake())
-    .doIf(session => session.contains("clientId")) {
+    .doIf(session => session.contains("cometDClientId")) {
     execCometD(cometD("Connect").connect())
 
       .execCometD(cometD("Subscribe Timer").subscribe("/timer/${userId}").acceptPushContains(Set("TriggeredTime")))
       .execCometD(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
 
       .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
-      pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      pause(1, 2).execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
     }
 
       .waitFor(session => session("counter").asOption[Long].getOrElse(0l) < 8)
-      .pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
+      .pause(1, 2).execCometD(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 
       .execCometD(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
       .execCometD(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))

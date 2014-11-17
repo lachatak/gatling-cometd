@@ -18,17 +18,23 @@ object Predef {
   def execCometD(actionBuilder: ActionBuilder): ChainBuilder = exec(feed(idFeeder).exec(actionBuilder))
 
   val idGenerator = new AtomicLong(1)
-  val idFeeder = Iterator.continually(Map("id" -> idGenerator.getAndIncrement))
+  val idFeeder = Iterator.continually(Map("cometDMessageId" -> idGenerator.getAndIncrement, "correlationId" -> UUID.randomUUID.toString))
+
+  private def reconciliateBuilder(min: Duration, max: Duration)(implicit requestTimeOut: FiniteDuration) = pause(min, max).exec(cometD("reconciliate").reconciliate)
 
   implicit class CometDScenarioBuilder(scenarioBuilder: ScenarioBuilder)(implicit requestTimeOut: FiniteDuration) {
     def execCometD(actionBuilder: ActionBuilder): ScenarioBuilder = scenarioBuilder.feed(idFeeder).exec(actionBuilder)
+
+    def waitFor(condition: Expression[Boolean], min: Duration = 1, max: Duration = 2): ScenarioBuilder = {
+      scenarioBuilder.exec(new LoopBuilder(condition, reconciliateBuilder(min, max), UUID.randomUUID.toString, false))
+    }
   }
 
   implicit class CometDChainBuilder(chainBuilder: ChainBuilder)(implicit requestTimeOut: FiniteDuration) {
     def execCometD(actionBuilder: ActionBuilder): ChainBuilder = chainBuilder.feed(idFeeder).exec(actionBuilder)
 
     def waitFor(condition: Expression[Boolean], min: Duration = 1, max: Duration = 2): ChainBuilder = {
-      chainBuilder.exec(new LoopBuilder(condition, pause(min, max).exec(cometD("reconciliate").reconciliate), UUID.randomUUID.toString, false))
+      chainBuilder.exec(new LoopBuilder(condition, reconciliateBuilder(min, max), UUID.randomUUID.toString, false))
     }
   }
 

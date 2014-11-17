@@ -90,7 +90,7 @@ with Matchers {
     implicit val cache = mutable.Map.empty[Any, Any]
     implicit val requestTimeOut = Duration(5, TimeUnit.SECONDS)
 
-    val session = Session("scenarioName", "userId", Map("id" -> 1))
+    val session = Session("scenarioName", "userId", Map("cometDMessageId" -> 1))
   }
 
 }

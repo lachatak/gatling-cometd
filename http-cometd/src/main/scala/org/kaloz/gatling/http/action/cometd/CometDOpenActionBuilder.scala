@@ -32,7 +32,7 @@ object MessageConverter {
 
 class CometDHandshakeActionBuilder(requestName: Expression[String], cometDName: String, handshake: Handshake)(implicit requestTimeOut: FiniteDuration) extends HttpActionBuilder {
 
-  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, handshake, CometDCheck(cometDProtocolMatchers + "\"clientId\"", handshakeTransformer, Some("clientId")), next))
+  def build(next: ActorRef, protocols: Protocols): ActorRef = actor(new WsSendAction(requestName, cometDName, handshake, CometDCheck(cometDProtocolMatchers + "\"clientId\"", handshakeTransformer, Some("cometDClientId")), next))
 
   val handshakeTransformer: String => String = { message =>
     val ack = message.fromJson[List[Ack]].head

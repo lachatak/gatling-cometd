@@ -18,9 +18,8 @@ class CometDMessagesSpec extends Specification with AllExpectations {
       handshake.channel mustEqual "/meta/handshake"
     }
 
-    "have an optional ${id} id" in {
-      handshake.id.isDefined mustEqual true
-      handshake.id.get mustEqual "${id}"
+    "have an ${cometDMessageId} in field id" in {
+      handshake.id mustEqual "${cometDMessageId}"
     }
   }
 
@@ -32,13 +31,12 @@ class CometDMessagesSpec extends Specification with AllExpectations {
       connect.channel mustEqual "/meta/connect"
     }
 
-    "have an optional ${id} id" in {
-      connect.id.isDefined mustEqual true
-      connect.id.get mustEqual "${id}"
+    "have an ${cometDMessageId} in field id" in {
+      connect.id mustEqual "${cometDMessageId}"
     }
 
-    "have an ${clientId} clientId" in {
-      connect.clientId mustEqual "${clientId}"
+    "have an ${cometDClientId} in field clientId" in {
+      connect.clientId mustEqual "${cometDClientId}"
     }
   }
 
@@ -50,13 +48,12 @@ class CometDMessagesSpec extends Specification with AllExpectations {
       disconnect.channel mustEqual "/meta/disconnect"
     }
 
-    "have an optional ${id} id" in {
-      disconnect.id.isDefined mustEqual true
-      disconnect.id.get mustEqual "${id}"
+    "have an ${cometDMessageId} in field id" in {
+      disconnect.id mustEqual "${cometDMessageId}"
     }
 
-    "have an ${clientId} clientId" in {
-      disconnect.clientId mustEqual "${clientId}"
+    "have an ${cometDClientId} in field clientId" in {
+      disconnect.clientId mustEqual "${cometDClientId}"
     }
   }
 
@@ -68,13 +65,12 @@ class CometDMessagesSpec extends Specification with AllExpectations {
       subscribe.channel mustEqual "/meta/subscribe"
     }
 
-    "have an optional ${id} id" in {
-      subscribe.id.isDefined mustEqual true
-      subscribe.id.get mustEqual "${id}"
+    "have an ${cometDMessageId} in field id" in {
+      subscribe.id mustEqual "${cometDMessageId}"
     }
 
-    "have an ${clientId} clientId" in {
-      subscribe.clientId mustEqual "${clientId}"
+    "have an ${cometDClientId} in field clientId" in {
+      subscribe.clientId mustEqual "${cometDClientId}"
     }
   }
 
@@ -86,22 +82,21 @@ class CometDMessagesSpec extends Specification with AllExpectations {
       unsubscribe.channel mustEqual "/meta/unsubscribe"
     }
 
-    "have an optional ${id} id" in {
-      unsubscribe.id.isDefined mustEqual true
-      unsubscribe.id.get mustEqual "${id}"
+    "have an ${cometDMessageId} in field id" in {
+      unsubscribe.id mustEqual "${cometDMessageId}"
     }
 
-    "have an ${clientId} clientId" in {
-      unsubscribe.clientId mustEqual "${clientId}"
+    "have an ${cometDClientId} in field clientId" in {
+      unsubscribe.clientId mustEqual "${cometDClientId}"
     }
   }
 
   "Publish" should {
 
-    "have an ${clientId} clientId" in {
+    "have an ${cometDClientId} in field clientId" in {
       val publish = Publish("channel", "data")
 
-      publish.clientId mustEqual "${clientId}"
+      publish.clientId mustEqual "${cometDClientId}"
     }
   }
 }
