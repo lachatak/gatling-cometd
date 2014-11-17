@@ -31,7 +31,6 @@ class CometDGatlingTest extends Simulation with StrictLogging {
   val users = 2
 
   val userIdGenerator = new AtomicLong(1)
-  val idGenerator = new AtomicLong(1)
 
   val httpConf = http
     .wsBaseURL("ws://localhost:8000")
@@ -41,32 +40,30 @@ class CometDGatlingTest extends Simulation with StrictLogging {
     .disableWarmUp
 
   val userIdFeeder = Iterator.continually(Map("userId" -> userIdGenerator.getAndIncrement()))
-  val idFeeder = Iterator.continually(Map("id" -> idGenerator.getAndIncrement))
   val uuidFeeder = Iterator.continually(Map("correlationId" -> UUID.randomUUID.toString))
 
   val scn = scenario("cometD")
     .feed(userIdFeeder)
     .pause(1, 6)
 
-    .exec(cometD("Open").open("/bayeux").pushProcessor[TimerCounterProcessor])
-    .feed(idFeeder).exec(cometD("Handshake").handshake())
+    .execCometD(cometD("Open").open("/bayeux").pushProcessor[TimerCounterProcessor])
+    .execCometD(cometD("Handshake").handshake())
     .doIf(session => session.contains("clientId")) {
-    feed(idFeeder).exec(cometD("Connect").connect())
+    execCometD(cometD("Connect").connect())
 
-      .feed(idFeeder).exec(cometD("Subscribe Timer").subscribe("/timer/${userId}").acceptPushContains(Set("TriggeredTime")))
-      .feed(idFeeder).exec(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
+      .execCometD(cometD("Subscribe Timer").subscribe("/timer/${userId}").acceptPushContains(Set("TriggeredTime")))
+      .execCometD(cometD("Subscribe Echo").subscribe("/echo/${userId}"))
 
       .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 4) {
       pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
     }
-      .asLongAs(session => session("counter").asOption[Long].getOrElse(0l) < 8) {
-      pause(1, 2).exec(cometD("reconciliate").reconciliate)
-    }
+
+      .waitFor(session => session("counter").asOption[Long].getOrElse(0l) < 8)
       .pause(1, 2).feed(uuidFeeder).exec(cometD("Shout Command").sendCommand("/shout/${userId}", Shout()).acceptResponseContains(Set("${correlationId}", "EchoedMessage", "!!egassem ohcE")))
 
-      .feed(idFeeder).exec(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
-      .feed(idFeeder).exec(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
-      .feed(idFeeder).exec(cometD("Disconnect").disconnect())
+      .execCometD(cometD("Unsubscribe Timer").unsubscribe("/timer/${userId}"))
+      .execCometD(cometD("Unsubscribe Echo").unsubscribe("/echo/${userId}"))
+      .execCometD(cometD("Disconnect").disconnect())
   }
   //    .exec(cometD("Close cometD").close)
 
