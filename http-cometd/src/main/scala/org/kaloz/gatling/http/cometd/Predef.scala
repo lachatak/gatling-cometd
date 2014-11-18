@@ -25,17 +25,17 @@ object Predef {
   implicit class CometDScenarioBuilder(scenarioBuilder: ScenarioBuilder)(implicit requestTimeOut: FiniteDuration) {
     def execCometD(actionBuilder: ActionBuilder): ScenarioBuilder = scenarioBuilder.feed(idFeeder).exec(actionBuilder)
 
-    def waitFor(condition: Expression[Boolean], min: Duration = 1, max: Duration = 2): ScenarioBuilder = {
-      scenarioBuilder.exec(new LoopBuilder(condition, reconciliateBuilder(min, max), UUID.randomUUID.toString, false))
-    }
+    def waitFor(condition: Expression[Boolean], min: Duration = 1, max: Duration = 2): ScenarioBuilder = scenarioBuilder.exec(new LoopBuilder(condition, reconciliateBuilder(min, max), UUID.randomUUID.toString, false))
+
+    def doIfSuccessfulHandshake(thenNext: ChainBuilder): ScenarioBuilder = scenarioBuilder.doIf(session => session.contains("cometDClientId"))(thenNext)
   }
 
   implicit class CometDChainBuilder(chainBuilder: ChainBuilder)(implicit requestTimeOut: FiniteDuration) {
     def execCometD(actionBuilder: ActionBuilder): ChainBuilder = chainBuilder.feed(idFeeder).exec(actionBuilder)
 
-    def waitFor(condition: Expression[Boolean], min: Duration = 1, max: Duration = 2): ChainBuilder = {
-      chainBuilder.exec(new LoopBuilder(condition, reconciliateBuilder(min, max), UUID.randomUUID.toString, false))
-    }
+    def waitFor(condition: Expression[Boolean], min: Duration = 1, max: Duration = 2): ChainBuilder = chainBuilder.exec(new LoopBuilder(condition, reconciliateBuilder(min, max), UUID.randomUUID.toString, false))
+
+    def doIfSuccessfulHandshake(thenNext: ChainBuilder): ChainBuilder = chainBuilder.doIf(session => session.contains("cometDClientId"))(thenNext)
   }
 
 }

@@ -1,6 +1,5 @@
 package org.kaloz.gatling.http.cometd.test
 
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 import com.typesafe.scalalogging.StrictLogging
@@ -47,7 +46,7 @@ class CometDGatlingTest extends Simulation with StrictLogging {
 
     .execCometD(cometD("Open").open("/bayeux").pushProcessor[TimerCounterProcessor])
     .execCometD(cometD("Handshake").handshake())
-    .doIf(session => session.contains("cometDClientId")) {
+    .doIfSuccessfulHandshake {
     execCometD(cometD("Connect").connect())
 
       .execCometD(cometD("Subscribe Timer").subscribe("/timer/${userId}").acceptPushContains(Set("TriggeredTime")))
