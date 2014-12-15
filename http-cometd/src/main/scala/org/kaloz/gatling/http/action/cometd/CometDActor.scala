@@ -1,6 +1,6 @@
 package org.kaloz.gatling.http.action.cometd
 
-import com.ning.http.client.websocket.WebSocket
+import com.ning.http.client.ws.WebSocket
 import io.gatling.http.action.ws._
 import io.gatling.http.ahc.WsTx
 import org.kaloz.gatling.http.action.cometd.PushProcessorActor.{Message, SessionUpdates}

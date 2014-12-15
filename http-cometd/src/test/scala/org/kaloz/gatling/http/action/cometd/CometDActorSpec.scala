@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorSystem}
 import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import com.ning.http.client.Request
-import com.ning.http.client.websocket.WebSocket
+import com.ning.http.client.ws.WebSocket
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.result.writer.{DataWriter, RunMessage}
 import io.gatling.core.session.Session

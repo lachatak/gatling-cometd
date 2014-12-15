@@ -18,7 +18,7 @@ This extension is build on top of [Gatling](http://gatling.io/) websocket functi
     .execCometD(cometD("Disconnect").disconnect())
 ```
 ### Version constraint ###
-Current version supports scala 2.11 and gatling 2.1.0-SNAPSHOT
+Current version supports scala 2.11 and gatling 2.1.0
 
 ## Run ##
 - Clone the project
@@ -29,15 +29,13 @@ Current version supports scala 2.11 and gatling 2.1.0-SNAPSHOT
 
 If you would like to use the cometD extension in your own project you should add the following sbt dependency:
 ```scala
-    "org.kaloz.gatling" % "http-cometd" % "1.2.0-SNAPSHOT" % "test"
+    "org.kaloz.gatling" % "http-cometd" % "1.2.0" % "test"
 ```
 
 ## Server side ##
 In order to be able to run and test the DSL we need a simple and easy to use cometD server. I picked [Faye](http://faye.jcoglan.com/) which is a publish-subscribe messaging system based on the Bayeux protocol running under nodejs.
  
 ## DSL in details##
-
-**DSL is still under development !!**
 
 ### Configuration ###
 - Configuration requires elements from the default Gatling API. The *wsBaseURl* points to my Faye local server.
