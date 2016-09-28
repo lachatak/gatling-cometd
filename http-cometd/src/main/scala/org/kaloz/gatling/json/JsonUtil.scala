@@ -18,7 +18,7 @@ object JsonUtil {
   mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
 
   def toJson(value: Any): String = {
-    mapper.writeValueAsString(value)
+    mapper.writeValueAsString(Array(value))
   }
 
   def fromJson[T: Manifest](json: String): T = {

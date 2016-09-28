@@ -12,7 +12,7 @@ object CometDMessages {
 
   case class Disconnect(channel: String = "/meta/disconnect", clientId: String = "${cometDClientId}", id: String = "${cometDMessageId}")
 
-  case class Subscribe(channel: String = "/meta/subscribe", clientId: String = "${cometDClientId}", subscription: String, id: String = "${cometDMessageId}")
+  case class Subscribe(channel: String = "/meta/subscribe", clientId: String = "${cometDClientId}", subscription: String, id: String = "${cometDMessageId}", ext: Option[Any] = None)
 
   case class Unsubscribe(channel: String = "/meta/unsubscribe", clientId: String = "${cometDClientId}", subscription: String, id: String = "${cometDMessageId}")
 
