@@ -23,7 +23,7 @@ class CometD(val requestName: Expression[String], val cometDName: String = Comet
 
   def connect(connect: Connect = Connect()) = new CometDConnectActionBuilder(requestName, cometDName, connect)
 
-  def subscribe(subscription: String, ext: Option[Any] = None)) = new CometDSubscribeActionBuilderStep1(requestName, cometDName, Subscribe(subscription = subscription, ext = ext))
+  def subscribe(subscription: String, ext: Option[Any] = None) = new CometDSubscribeActionBuilderStep1(requestName, cometDName, Subscribe(subscription = subscription, ext = ext))
 
   def unsubscribe(subscription: String) = new CometDUnsubscribeActionBuilder(requestName, cometDName, Unsubscribe(subscription = subscription))
 
